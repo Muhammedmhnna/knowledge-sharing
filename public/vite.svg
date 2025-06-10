@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Gradient DNA Helix -->
+  <defs>
+    <linearGradient id="dnaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5A0" />
+      <stop offset="100%" stop-color="#00D9F5" />
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Digital DNA Strand -->
+  <path d="M20 20 Q50 5 80 20 Q95 30 80 40 Q50 55 20 40 Q5 30 20 20
+           M20 60 Q50 45 80 60 Q95 70 80 80 Q50 95 20 80 Q5 70 20 60" 
+        fill="none" 
+        stroke="url(#dnaGradient)" 
+        stroke-width="3" 
+        stroke-linecap="round"
+        filter="url(#glow)"/>
+
+  <!-- Binary Heartbeat -->
+  <path d="M25 50 L30 30 L35 50 L40 35 L45 65 L50 40 L55 50 L60 45" 
+        stroke="#FF2D75" 
+        stroke-width="4" 
+        stroke-linecap="round"/>
+</svg>
