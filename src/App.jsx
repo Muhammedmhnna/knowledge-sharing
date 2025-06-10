@@ -196,10 +196,6 @@ const router = createBrowserRouter([
             element: <AllNationalIds />,
           },
           {
-            path: "add-product",
-            element: <AddProduct />,
-          },
-          {
             path: "flagged-posts",
             element: <FlaggedPosts />,
           },
