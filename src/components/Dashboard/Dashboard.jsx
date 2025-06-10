@@ -5,7 +5,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { ThreeDots } from "react-loader-spinner";
 import { FiFlag, FiUsers, FiShoppingBag, FiUserPlus, FiLogOut, FiX, FiChevronRight, FiChevronLeft } from "react-icons/fi";
 import FlaggedPosts from "../FlaggedPosts/FlaggedPosts.jsx";
-import AddProduct from "../AddProduct/AddProduct.jsx";
 import AllNationalIds from "../AllNationalIds/AllNationalIds.jsx";
 import AllProducts from "../AllProducts/AllProducts.jsx";
 import { useAdmin } from "../../Context/AdminContext.jsx";
