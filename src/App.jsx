@@ -23,7 +23,6 @@ import AdminForgetPassword from "./components/AdminForgetPassword/AdminForgetPas
 import AdminResetPassword from "./components/AdminResetPassword/AdminResetPassword.jsx";
 import AllNationalIds from "./components/AllNationalIds/AllNationalIds.jsx";
 import AllProducts from "./components/AllProducts/AllProducts.jsx";
-import AddProduct from "./components/AddProduct/AddProduct.jsx";
 import FlaggedPosts from "./components/FlaggedPosts/FlaggedPosts.jsx";
 import { toast } from "react-hot-toast";
 import Shop from "./components/Shop/Shop.jsx";
