@@ -18,33 +18,53 @@ const Chatbot = () => {
   const [gradioClient, setGradioClient] = useState(null);
   const [showNewMessagesButton, setShowNewMessagesButton] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Refs
   const inputRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Initialize connection
+  // Initialize connection with retry logic
   useEffect(() => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 3000; // 3 seconds
+
     const connectToAPI = async () => {
       try {
+        console.log(`Attempting to connect to Gradio API (attempt ${retryCount + 1})`);
         const client = await Client.connect("yazied49/nad");
         setGradioClient(client);
         setConnectionStatus('connected');
+        console.log("Connected successfully to Gradio API");
       } catch (err) {
         console.error("Connection error:", err);
-        setConnectionStatus('disconnected');
-        addMessage({
-          text: "Connection error. Working in limited mode.",
-          sender: 'bot'
-        });
+
+        if (retryCount < MAX_RETRIES - 1) {
+          console.log(`Retrying in ${RETRY_DELAY / 1000} seconds...`);
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, RETRY_DELAY);
+        } else {
+          setConnectionStatus('disconnected');
+          addSystemMessage("Sorry, I can't connect to the AI service right now. Working in offline mode.");
+        }
       }
     };
 
     connectToAPI();
-  }, []);
+  }, [retryCount]);
 
-  // Enhanced scroll behavior
+  // Add system messages with a different style
+  const addSystemMessage = (text) => {
+    setMessages(prev => [...prev, {
+      text,
+      sender: 'system',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }]);
+  };
+
+  // Enhanced scroll behavior with debounce
   const scrollToBottom = debounce((behavior = 'auto') => {
     if (messagesContainerRef.current) {
       const container = messagesContainerRef.current;
@@ -63,11 +83,13 @@ const Chatbot = () => {
     }
   }, 100);
 
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom('smooth');
     return () => scrollToBottom.cancel();
   }, [messages]);
 
+  // Add message helper function
   const addMessage = (message) => {
     setMessages(prev => [...prev, {
       ...message,
@@ -75,26 +97,45 @@ const Chatbot = () => {
     }]);
   };
 
+  // Handle sending messages
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading || !gradioClient) return;
+    if (!inputValue.trim() || isLoading) return;
 
-    // Add user message
-    addMessage({
+    // Add user message immediately
+    const userMessage = {
       text: inputValue,
       sender: 'user'
-    });
-
+    };
+    addMessage(userMessage);
     setInputValue('');
     setIsLoading(true);
     setIsTyping(true);
 
-    try {
-      // Get AI response
-      const result = await gradioClient.predict("/predict", {
-        user_input: inputValue
-      });
+    // Check connection status
+    if (!gradioClient || connectionStatus !== 'connected') {
+      addSystemMessage("Still connecting to the AI service... please wait");
+      setIsLoading(false);
+      setIsTyping(false);
+      return;
+    }
 
-      // Simulate typing delay
+    try {
+      // Get AI response with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+      const result = await Promise.race([
+        gradioClient.predict("/predict", {
+          user_input: inputValue
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 15000)
+        )
+      ]);
+
+      clearTimeout(timeoutId);
+
+      // Simulate typing delay for better UX
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
 
       addMessage({
@@ -103,16 +144,18 @@ const Chatbot = () => {
       });
     } catch (err) {
       console.error("API error:", err);
-      addMessage({
-        text: "Sorry, I encountered an error. Please try again.",
-        sender: 'bot'
-      });
+      const errorMessage = err.message.includes('timeout')
+        ? "The request took too long. Please try again later."
+        : "Sorry, I encountered an error. Please try again.";
+
+      addSystemMessage(errorMessage);
     } finally {
       setIsLoading(false);
       setIsTyping(false);
     }
   };
 
+  // Handle keyboard events
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -120,7 +163,7 @@ const Chatbot = () => {
     }
   };
 
-  // Adjust textarea height dynamically
+  // Dynamic textarea height adjustment
   const adjustTextareaHeight = () => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -132,8 +175,8 @@ const Chatbot = () => {
     adjustTextareaHeight();
   }, [inputValue]);
 
-  // Handle scroll events
-  const handleScroll = () => {
+  // Handle scroll events for new message indicator
+  const handleScroll = debounce(() => {
     if (messagesContainerRef.current) {
       const container = messagesContainerRef.current;
       const isNearBottom = container.scrollTop + container.clientHeight > container.scrollHeight - 100;
@@ -143,7 +186,7 @@ const Chatbot = () => {
         setUnreadCount(0);
       }
     }
-  };
+  }, 100);
 
   // Count new messages when not at bottom
   useEffect(() => {
@@ -157,28 +200,34 @@ const Chatbot = () => {
     }
   }, [messages]);
 
+  // Reconnect button handler
+  const handleReconnect = () => {
+    setConnectionStatus('connecting');
+    setRetryCount(0);
+  };
+
   return (
     <div className="flex flex-col h-screen w-full bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800">
       {/* Header */}
-      <motion.div 
+      <motion.div
         className="p-4 shadow-md bg-gradient-to-r from-blue-600 to-purple-600"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 300 }}
       >
         <div className="container mx-auto flex items-center justify-between">
-          <motion.div 
+          <motion.div
             className="flex items-center space-x-3"
             whileHover={{ scale: 1.02 }}
           >
             <div className="relative">
-              <motion.div 
+              <motion.div
                 className="w-10 h-10 rounded-full bg-white flex items-center justify-center"
-                animate={{ 
-                  rotate: 360,
+                animate={{
+                  rotate: connectionStatus === 'connected' ? 360 : 0,
                   scale: [1, 1.1, 1]
                 }}
-                transition={{ 
+                transition={{
                   rotate: { duration: 10, repeat: Infinity, ease: "linear" },
                   scale: { duration: 2, repeat: Infinity }
                 }}
@@ -187,8 +236,10 @@ const Chatbot = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </motion.div>
-              <motion.span 
-                className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-400"
+              <motion.span
+                className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400' :
+                    connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
+                  }`}
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
@@ -197,13 +248,25 @@ const Chatbot = () => {
               Nova AI
             </motion.h1>
           </motion.div>
-          
+
           <div className="flex items-center space-x-4">
+            {connectionStatus === 'disconnected' && (
+              <motion.button
+                onClick={handleReconnect}
+                className="px-3 py-1 text-xs bg-black bg-opacity-20 rounded-full text-white hover:bg-opacity-30"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Reconnect
+              </motion.button>
+            )}
+
             <div className="flex items-center space-x-2">
               <span className="text-sm text-blue-100">
                 {connectionStatus.charAt(0).toUpperCase() + connectionStatus.slice(1)}
               </span>
             </div>
+
             {unreadCount > 0 && (
               <motion.span
                 className="bg-red-500 text-white text-xs px-2 py-1 rounded-full"
@@ -226,7 +289,7 @@ const Chatbot = () => {
       >
         {/* Floating gradient overlay */}
         <div className="fixed top-0 left-0 right-0 h-20 bg-gradient-to-b from-blue-50 to-transparent pointer-events-none z-0" />
-        
+
         {/* New messages button */}
         <AnimatePresence>
           {showNewMessagesButton && (
@@ -257,7 +320,7 @@ const Chatbot = () => {
               transition={{ duration: 0.3 }}
             >
               {message.sender === 'bot' && (
-                <motion.div 
+                <motion.div
                   className="mr-2 self-end"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -270,22 +333,26 @@ const Chatbot = () => {
                   </div>
                 </motion.div>
               )}
-              
+
               <motion.div
                 className={`max-w-[80%] lg:max-w-[70%] rounded-2xl px-4 py-3 ${message.sender === 'user'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none'
-                    : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-sm'
+                    : message.sender === 'system'
+                      ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg'
+                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-sm'
                   }`}
                 whileHover={{ scale: 1.02 }}
               >
                 <p className="whitespace-pre-wrap break-words">{message.text}</p>
-                <p className={`text-xs mt-1 text-right ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                <p className={`text-xs mt-1 text-right ${message.sender === 'user' ? 'text-blue-100' :
+                    message.sender === 'system' ? 'text-yellow-600' : 'text-gray-500'
+                  }`}>
                   {message.timestamp}
                 </p>
               </motion.div>
-              
+
               {message.sender === 'user' && (
-                <motion.div 
+                <motion.div
                   className="ml-2 self-end"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -307,12 +374,12 @@ const Chatbot = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <motion.div 
+              <motion.div
                 className="mr-2 self-end"
-                animate={{ 
+                animate={{
                   y: [0, -5, 0],
                 }}
-                transition={{ 
+                transition={{
                   duration: 1.5,
                   repeat: Infinity,
                   ease: "easeInOut"
@@ -324,7 +391,7 @@ const Chatbot = () => {
                   </svg>
                 </div>
               </motion.div>
-              
+
               <div className="px-4 py-3 rounded-2xl rounded-bl-none max-w-[70%] bg-white border border-gray-200 shadow-sm">
                 <div className="flex space-x-2">
                   <div className="typing-dot bg-gray-500" style={{ animationDelay: '0ms' }} />
@@ -348,7 +415,7 @@ const Chatbot = () => {
       >
         <div className="container mx-auto max-w-4xl">
           <div className="relative">
-            <motion.div 
+            <motion.div
               className="absolute left-3 top-3"
               whileHover={{ scale: 1.1 }}
             >
@@ -356,7 +423,7 @@ const Chatbot = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
               </svg>
             </motion.div>
-            
+
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -365,21 +432,21 @@ const Chatbot = () => {
                 adjustTextareaHeight();
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Message Nova..."
+              placeholder={connectionStatus === 'connected' ? "Message Nova..." : "Connecting to service..."}
               className="w-full p-3 pl-10 pr-12 rounded-lg focus:outline-none resize-none overflow-hidden max-h-40 transition-all duration-200 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={1}
-              disabled={isLoading}
+              disabled={isLoading || connectionStatus !== 'connected'}
             />
-            
+
             <motion.button
               onClick={handleSendMessage}
-              disabled={isLoading || !inputValue.trim()}
-              className={`absolute right-2 bottom-2 p-2 rounded-full ${isLoading || !inputValue.trim()
-                  ? 'text-gray-400'
-                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-100'
+              disabled={isLoading || !inputValue.trim() || connectionStatus !== 'connected'}
+              className={`absolute right-2 bottom-2 p-2 rounded-full ${isLoading || !inputValue.trim() || connectionStatus !== 'connected'
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-100 cursor-pointer'
                 }`}
-              whileHover={!isLoading && inputValue.trim() ? { scale: 1.1 } : {}}
-              whileTap={!isLoading && inputValue.trim() ? { scale: 0.9 } : {}}
+              whileHover={(!isLoading && inputValue.trim() && connectionStatus === 'connected') ? { scale: 1.1 } : {}}
+              whileTap={(!isLoading && inputValue.trim() && connectionStatus === 'connected') ? { scale: 0.9 } : {}}
             >
               {isLoading ? (
                 <motion.svg
@@ -400,15 +467,15 @@ const Chatbot = () => {
               )}
             </motion.button>
           </div>
-          
+
           {/* Footer with subtle branding */}
-          <motion.div 
+          <motion.div
             className="text-center mt-2 text-xs text-gray-400"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
           >
-            Powered by Nova AI • Ask me anything
+            Powered by Nova AI • {connectionStatus === 'connected' ? 'Ready' : connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
           </motion.div>
         </div>
       </motion.div>
