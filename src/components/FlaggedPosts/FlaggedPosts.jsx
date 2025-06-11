@@ -74,9 +74,8 @@ const FlaggedPosts = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <ThreeDots height="80" width="80" color="#4fa94d" />
-        <ToastContainer position="top-right" autoClose={3000} />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -134,8 +133,8 @@ const FlaggedPosts = () => {
               <button
                 onClick={() => removePost(post._id)}
                 className={`px-4 py-2 rounded-md ${loadingRemove === post._id
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-red-500 hover:bg-red-600"
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-red-500 hover:bg-red-600"
                   } text-white transition-colors`}
                 disabled={loadingRemove === post._id}
               >
@@ -152,8 +151,8 @@ const FlaggedPosts = () => {
               <button
                 onClick={() => deactivateUser(post._id)}
                 className={`px-4 py-2 rounded-md ${loadingDeactivate === post._id
-                    ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-blue-500 hover:bg-blue-600"
+                  ? "bg-blue-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600"
                   } text-white transition-colors`}
                 disabled={loadingDeactivate === post._id}
               >

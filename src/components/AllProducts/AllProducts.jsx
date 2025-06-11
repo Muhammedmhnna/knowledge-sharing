@@ -211,8 +211,8 @@ export default function AllProducts() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <ThreeDots height="80" width="80" color="#000" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }

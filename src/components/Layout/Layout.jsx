@@ -7,7 +7,7 @@ export default function Layout() {
   const { user } = useUser();
 
   return (
-    <div className="bg-[#E3ECE7] min-h-screen">
+    <div>
       {user ? (
         <>
           <Navbar />

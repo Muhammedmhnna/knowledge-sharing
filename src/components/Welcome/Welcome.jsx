@@ -137,7 +137,7 @@ const WelcomePage = () => {
                     </motion.div>
 
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-                        Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-blue-400">KnowledgeBridge</span>
+                        Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-blue-400">Accessible Health Hub</span>
                     </h1>
 
                     <div className="h-16 flex items-center justify-center">

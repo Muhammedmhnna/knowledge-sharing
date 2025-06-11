@@ -863,7 +863,7 @@ export default function Post() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8 min-h-screen bg-gray-50">
-      <div className="flex flex-col md:flex-row gap-20">
+      <div className="flex flex-col md:flex-row md:gap-20 gap-6">
         <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}

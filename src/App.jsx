@@ -32,7 +32,6 @@ import EditPost from "./components/EditPost/EditPost.jsx";
 import { AdminProvider } from "./Context/AdminContext.jsx";
 import AdminLayout from "./components/AdminLayout/AdminLayout.jsx";
 import AdminProtectedRoute from "./components/AdminProtectedRoute/AdminProtectedRoute.jsx";
-import ChatbotPage from "./components/Chatbot/Chatbot";
 const router = createBrowserRouter([
   {
     path: "",
@@ -149,10 +148,6 @@ const router = createBrowserRouter([
       {
         path: "post/:id",
         element: <SpecPost />,
-      },
-      {
-        path: "chat",
-        element: <ChatbotPage />,
       },
       {
         path: "*",

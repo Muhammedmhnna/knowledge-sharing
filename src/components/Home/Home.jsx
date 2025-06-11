@@ -12,7 +12,7 @@ export default function Home() {
 
   // Navigation handlers
   const goToKnowledgeCorner = () => navigate("/post");
-  const goToChatPage = () => navigate("/chat");
+  const goToChatPage = () => navigate("/chatbot");
 
   // Animation variants
   const containerVariants = {
