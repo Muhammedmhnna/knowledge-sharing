@@ -163,7 +163,7 @@ export default function AdminLogin() {
                   </div>
                   <input
                     name="email"
-                    type="email"
+                    type="text"
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     value={formik.values.email}

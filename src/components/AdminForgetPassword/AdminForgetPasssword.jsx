@@ -34,9 +34,8 @@ export default function AdminForgetPassword() {
           navigate("/admin/resetPassword");
         }, 500);
       } catch (err) {
-        console.error(err);
         formik.setStatus(
-          err.response?.data?.message ||
+          err.response?.data?.error ||
             "Failed to send reset code. Please try again."
         );
       } finally {

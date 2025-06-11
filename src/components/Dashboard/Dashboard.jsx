@@ -3,24 +3,36 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ThreeDots } from "react-loader-spinner";
-import { FiFlag, FiUsers, FiShoppingBag, FiUserPlus, FiLogOut, FiX, FiChevronRight, FiChevronLeft, FiMenu } from "react-icons/fi";
+import { FiFlag, FiUsers, FiShoppingBag, FiUserPlus, FiLogOut, FiX, FiChevronRight, FiChevronLeft, FiMenu, FiCheckCircle } from "react-icons/fi";
 import FlaggedPosts from "../FlaggedPosts/FlaggedPosts.jsx";
 import AllNationalIds from "../AllNationalIds/AllNationalIds.jsx";
 import AllProducts from "../AllProducts/AllProducts.jsx";
 import { useAdmin } from "../../Context/AdminContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 
 export default function Dashboard() {
   const { admin, clearAdmin } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("flagged");
   const [showModal, setShowModal] = useState(false);
-  const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const token = admin?.token;
+
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const validateEmail = (value) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!value) return "Email is required.";
+    if (!emailRegex.test(value)) return "Please enter a valid email address.";
+    return "";
+  };
+
 
   useEffect(() => {
     const handleResize = () => {
@@ -41,20 +53,43 @@ export default function Dashboard() {
     }`;
 
   const handleAddAdmin = async () => {
+    const error = validateEmail(email);
+    setEmailTouched(true);
+    setEmailError(error);
+    if (error) return;
+
     try {
       const response = await axios.post(
         "https://knowledge-sharing-pied.vercel.app/admin/createAdmin",
         { email, name },
         { headers: { token: token } }
       );
-      toast.success("Admin Created Successfully!");
-      setShowModal(false);
-      setEmail("");
-      setName("");
+
+      setShowSuccess(true); // Show success message
+
+      // Delay for 2 seconds before closing
+      setTimeout(() => {
+        setShowSuccess(false);
+        setShowModal(false);
+        handleClearAdminForm();
+        setEmailError("");
+        setEmailTouched(false);
+      }, 2000);
+
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to create administrator. Please check data.");
+      const errorMsg = error.response?.data?.error || "Failed to create administrator. Please check data.";
+      setEmailError(errorMsg);
     }
   };
+
+
+  const handleClearAdminForm = async () => {
+    setEmail("");
+    setName("");
+  }
+
+
+
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 font-sans relative">
@@ -264,19 +299,28 @@ export default function Dashboard() {
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  Email Address
-                  <span className="text-red-500 ml-1">*</span>
+                  Email Address <span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type="email"
                     placeholder="admin@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailTouched) {
+                        setEmailError(validateEmail(e.target.value));
+                      }
+                    }}
+                    onBlur={() => {
+                      setEmailTouched(true);
+                      setEmailError(validateEmail(email));
+                    }}
+                    className={`w-full p-3 pl-10 border rounded-lg focus:ring-2 transition-all ${emailError ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                      }`}
                     required
-                    autoFocus
                   />
+
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -284,12 +328,22 @@ export default function Dashboard() {
                     </svg>
                   </div>
                 </div>
+                {showSuccess && (
+                  <div className="mt-4 flex items-center justify-center gap-2 text-green-600 bg-green-100 px-4 py-2 rounded-lg animate-fade-in">
+                    <FiCheckCircle className="w-5 h-5" />
+                    <span>Admin created successfully!</span>
+                  </div>
+                )}
+
+                {emailTouched && emailError && (
+                  <p className="mt-1 text-sm text-red-600">{emailError}</p>
+                )}
+
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  Full Name
-                  <span className="text-red-500 ml-1">*</span>
+                  Full Name <span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -309,12 +363,18 @@ export default function Dashboard() {
               </div>
             </div>
 
+
+
             {/* Modal Footer */}
             <div className="mt-8 flex justify-end gap-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  handleClearAdminForm();
+                  setShowModal(false);
+                }}
+
                 className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
               >
                 Cancel

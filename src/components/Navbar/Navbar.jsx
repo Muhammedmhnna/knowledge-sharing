@@ -159,8 +159,8 @@ export default function Navbar() {
       transition={{ duration: 0.3 }}
       onClick={() => handleNotificationClick(notification)}
       className={`p-3 rounded-lg cursor-pointer transition-colors ${!notification.isRead
-          ? "bg-blue-50 border-l-2 border-blue-500"
-          : "hover:bg-gray-50"
+        ? "bg-blue-50 border-l-2 border-blue-500"
+        : "hover:bg-gray-50"
         }`}
     >
       <div className="flex items-start">
@@ -505,8 +505,8 @@ export default function Navbar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="md:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="md:hidden fixed top-0 right-0 left-0 z-50 min-h-screen bg-black/70 backdrop-blur-md flex items-end justify-center p-0"
                   onClick={() => setShowNotifications(false)}
                 >
                   <motion.div
@@ -515,106 +515,155 @@ export default function Navbar() {
                     exit={{ y: "100%" }}
                     transition={{
                       type: "spring",
-                      damping: 20,
+                      damping: 25,
                       stiffness: 300,
                       mass: 0.5
                     }}
-                    className="fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-3xl shadow-2xl z-50 overflow-hidden"
+                    className="w-full max-w-full rounded-t-3xl bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col"
+                    style={{ maxHeight: "90vh" }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Header */}
-                    <div className="sticky top-0 z-10 p-4 border-b bg-white flex justify-between items-center">
-                      <h3 className="font-semibold text-lg">Notifications</h3>
-                      <button
-                        onClick={() => setShowNotifications(false)}
-                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                      >
-                        <FaTimes size={20} className="text-gray-500 hover:text-gray-800" />
-                      </button>
+                    {/* Header with gradient and drag handle */}
+                    <div className="sticky top-0 z-20 pt-3 pb-2 px-5 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 flex flex-col">
+                      <div className="flex justify-center mb-1">
+                        <div className="w-8 h-1 rounded-full bg-white/40"></div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <FaBell className="text-white mr-3 text-lg" />
+                          <h3 className="font-bold text-lg text-white">Notifications</h3>
+                          {notifications.some(n => !n.isRead) && (
+                            <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs text-white">
+                              {notifications.filter(n => !n.isRead).length} new
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setShowNotifications(false)}
+                          className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                        >
+                          <FaTimes className="text-white/90 text-lg" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Content */}
-                    <div className="h-[calc(100%-120px)] overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto overscroll-contain">
                       {loading ? (
-                        <div className="p-8 flex flex-col items-center justify-center text-gray-500">
+                        <div className="h-48 flex flex-col items-center justify-center">
                           <motion.div
                             animate={{ rotate: 360 }}
                             transition={{
-                              duration: 1,
+                              duration: 1.2,
                               repeat: Infinity,
                               ease: "linear",
                             }}
-                            className="rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mb-2"
+                            className="rounded-full h-10 w-10 border-3 border-indigo-500 border-t-transparent mb-3"
                           />
-                          <p>Loading notifications...</p>
+                          <p className="text-gray-500 dark:text-gray-400">Loading your notifications...</p>
                         </div>
                       ) : notifications.length > 0 ? (
-                        <ul className="divide-y divide-gray-100">
-                          {notifications.map((notification, index) => (
+                        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                          {notifications.map((notification) => (
                             <motion.li
                               key={notification._id}
-                              initial={{ opacity: 0, y: 10 }}
+                              initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.2, delay: index * 0.05 }}
+                              transition={{ duration: 0.2 }}
                               onClick={() => handleNotificationClick(notification)}
-                              className={`p-4 active:bg-gray-100 transition-colors ${!notification.isRead ? "bg-blue-50/50" : "hover:bg-gray-50/50"
+                              className={`relative p-4 transition-all ${!notification.isRead
+                                ? "bg-indigo-50/50 dark:bg-indigo-900/20"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
                                 }`}
                             >
-                              <div className="flex items-start">
-                                <div className="flex-shrink-0 pt-1 text-2xl">
-                                  {notificationIcons[notification.type] ||
-                                    notificationIcons.default}
+                              <div className="flex items-start gap-3">
+                                <div className={`flex-shrink-0 p-2 rounded-lg ${!notification.isRead
+                                  ? "bg-indigo-100 dark:bg-indigo-800/50 text-indigo-600 dark:text-indigo-300"
+                                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                                  {notificationIcons[notification.type] || notificationIcons.default}
                                 </div>
-                                <div className="ml-3 flex-1 min-w-0">
-                                  <div className="flex justify-between items-baseline">
-                                    <p className={`text-sm font-semibold ${!notification.isRead ? "text-gray-900" : "text-gray-700"
-                                      }`}>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-baseline gap-2">
+                                    <p className={`text-sm font-semibold line-clamp-1 ${!notification.isRead
+                                      ? "text-gray-900 dark:text-white"
+                                      : "text-gray-700 dark:text-gray-300"
+                                      }`}
+                                    >
                                       {notification.sender?.name || "System"}
                                     </p>
-                                    <p className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                                    <p className="text-xs text-gray-400 whitespace-nowrap">
                                       {formatDate(notification.createdAt)}
                                     </p>
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1">
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                                     {notificationMessages[notification.type]?.(
                                       notification.sender?.name || "Someone",
                                       notification.postId?.title || "your post"
                                     ) || notificationMessages.default()}
                                   </p>
                                   {notification.postId?.title && (
-                                    <div className="mt-2 flex items-center">
-                                      <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-600">
+                                    <motion.div
+                                      whileHover={{ x: 2 }}
+                                      className="mt-2 inline-flex items-center"
+                                    >
+                                      <span className="inline-block px-2.5 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300">
                                         {notification.postId.title}
                                       </span>
-                                      <FaChevronRight className="ml-1 text-xs text-gray-400" />
-                                    </div>
+                                      <FaChevronRight className="ml-1 text-xs text-gray-400 dark:text-gray-500" />
+                                    </motion.div>
                                   )}
                                 </div>
+                                {!notification.isRead && (
+                                  <div className="absolute top-4 right-4 flex-shrink-0">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 dark:bg-indigo-400 block animate-pulse"></span>
+                                  </div>
+                                )}
                               </div>
                             </motion.li>
                           ))}
                         </ul>
                       ) : (
-                        <div className="p-8 text-center text-gray-500">
-                          <FaRegBell className="mx-auto text-3xl text-gray-300 mb-2" />
-                          <p>No notifications yet</p>
+                        <div className="h-48 flex flex-col items-center justify-center text-center p-6">
+                          <div className="relative mb-4">
+                            <FaRegBell className="text-4xl text-gray-300 dark:text-gray-600" />
+                            <motion.div
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ repeat: Infinity, duration: 2 }}
+                              className="absolute -inset-2 rounded-full bg-indigo-100/50 dark:bg-indigo-900/20"
+                            />
+                          </div>
+                          <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">No notifications yet</h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            We'll notify you when something new arrives
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="sticky bottom-0 left-0 right-0 p-4 border-t bg-white">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          navigate("/notifications");
-                          setShowNotifications(false);
-                        }}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-md active:shadow-lg transition-all"
-                      >
-                        View All Notifications
-                      </motion.button>
+                    {/* Footer with floating action button */}
+                    <div className="sticky bottom-0 p-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={handleMarkAsRead}
+                          className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium text-sm"
+                          disabled={notifications.every(n => n.isRead)}
+                        >
+                          Mark all as read
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => {
+                            navigate("/notifications");
+                            setShowNotifications(false);
+                          }}
+                          className="flex-1 py-2.5 px-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium text-sm shadow-md"
+                        >
+                          View all
+                        </motion.button>
+                      </div>
                     </div>
                   </motion.div>
                 </motion.div>

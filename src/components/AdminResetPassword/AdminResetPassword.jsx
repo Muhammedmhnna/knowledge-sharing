@@ -46,7 +46,7 @@ export default function AdminResetPassword() {
         setTimeout(() => navigate("/admin/login"), 1500);
       } catch (err) {
         formik.setStatus(
-          err.response?.data?.message || "Reset failed. Please check your details."
+          err.response?.data?.error || "Reset failed. Please check your details."
         );
       }
     },

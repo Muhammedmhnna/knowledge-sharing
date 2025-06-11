@@ -109,7 +109,6 @@ export default function SpecPost() {
       );
       setPost(data.post);
 
-
       // Fetch comments if they were shown before refresh
       const savedShowComments =
         JSON.parse(localStorage.getItem("showComments")) || {};
@@ -130,7 +129,6 @@ export default function SpecPost() {
     fetchPost();
   }, [id]);
 
-
   // Fetch comments when post changes
   useEffect(() => {
     if (post?._id) {
@@ -141,7 +139,6 @@ export default function SpecPost() {
       }
     }
   }, [post?._id]);
-
 
   // Handle delete post
   const handleDeletePost = async (postId) => {
@@ -178,7 +175,6 @@ export default function SpecPost() {
         {},
 
         { headers: { token: token } }
-
       );
 
       setLikeCounts((prev) => ({
@@ -290,7 +286,6 @@ export default function SpecPost() {
     }
   };
 
-
   // Fetch comments for a post
 
   const fetchComments = async (postId) => {
@@ -299,21 +294,17 @@ export default function SpecPost() {
         `https://knowledge-sharing-pied.vercel.app/comment/${postId}/get`
       );
 
-
       const fetchedComments = res.data || [];
-
 
       setComments((prev) => {
         const newComments = {
           ...prev,
 
           [postId]: fetchedComments,
-
         };
         localStorage.setItem("comments", JSON.stringify(newComments));
         return newComments;
       });
-
 
       if (post && post._id === postId) {
         setPost((prev) => ({
@@ -456,8 +447,8 @@ export default function SpecPost() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
         className={`mt-3 ${depth > 0
-            ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
-            : ""
+          ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
+          : ""
           }`}
       >
         <div className="flex gap-3 items-start">
@@ -573,8 +564,8 @@ export default function SpecPost() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <ThreeDots visible={true} height="80" width="80" color="#4F46E5" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -692,12 +683,10 @@ export default function SpecPost() {
                   e.stopPropagation();
                   handleLikePost(post._id);
                 }}
-
                 className={`flex cursor-pointer items-center gap-1 ${likeCounts[post._id]?.isLiked
-                    ? "text-indigo-500"
-                    : "text-gray-500"
+                  ? "text-indigo-500"
+                  : "text-gray-500"
                   }`}
-
               >
                 <motion.div
                   animate={{
@@ -719,15 +708,12 @@ export default function SpecPost() {
                   e.stopPropagation();
 
                   toggleComments(post._id);
-
                 }}
                 className="flex items-center cursor-pointer gap-1 text-gray-500 hover:text-indigo-500"
               >
                 <FaRegCommentDots className="text-xl" />
                 <span className="text-sm">
-
                   {post.comments_count || comments[post._id]?.length || 0}
-
                 </span>
               </motion.div>
 
@@ -746,40 +732,36 @@ export default function SpecPost() {
               </motion.div>
             </div>
 
-         
-              <div className="flex gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/editPost/${post._id}`);
-                  }}
-                  className="cursor-pointer text-gray-500 hover:text-indigo-600"
-                >
-                  <FaEdit size={20} />
-                </motion.button>
+            <div className="flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/editPost/${post._id}`);
+                }}
+                className="cursor-pointer text-gray-500 hover:text-indigo-600"
+              >
+                <FaEdit size={20} />
+              </motion.button>
 
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeletePost(post._id);
-                  }}
-                  className="cursor-pointer text-gray-500 hover:text-red-600"
-                >
-                  <MdDelete size={20} />
-                </motion.button>
-              </div>
-            
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeletePost(post._id);
+                }}
+                className="cursor-pointer text-gray-500 hover:text-red-600"
+              >
+                <MdDelete size={20} />
+              </motion.button>
+            </div>
           </div>
 
           {/* Comments Section */}
           <AnimatePresence>
-
             {showComments[post._id] && (
-
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -824,10 +806,8 @@ export default function SpecPost() {
                   </form>
 
                   <div className="mb-4">
-
                     {comments[post._id] && comments[post._id].length > 0 ? (
                       renderComments(comments[post._id], post._id)
-
                     ) : (
                       <div className="text-center py-4 text-gray-500 text-sm">
                         No comments yet. Be the first to comment!
