@@ -53,14 +53,14 @@ export default function AllNationalIds() {
       if (response.data.success) {
         // لو true: امسحه من القائمة
         setNationalIds((prev) => prev.filter((item) => item._id !== userId));
-        toast.success(response.data.message || `Dr. ${doctorName} تم توثيقه بنجاح ✅`);
+        toast.success(response.data.message || `Dr. ${doctorName} Successfully approved ✅`);
       } else {
         // لو false: اظهر رسالة خطأ (مش هتحذفه)
-        toast.error(response.data.message || "فشل التوثيق، حاول مرة أخرى");
+        toast.error(response.data.message || "Failed to approve,try again");
       }
     } catch (err) {
       // لو حصل error في الـ request أصلاً
-      toast.error(err.response?.data?.message || "حدث خطأ أثناء التوثيق");
+      toast.error(err.response?.data?.message || "An error occurred while approving.");
     } finally {
       setLoadingVerify(null);
     }

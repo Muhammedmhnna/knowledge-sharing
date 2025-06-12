@@ -11,7 +11,7 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
-        const storedUser = localStorage.getItem("userData");
+        const storedUser = localStorage.getItem("userData"); // ✅ use consistent key
         if (!storedUser) return;
 
         const parsedUser = JSON.parse(storedUser);
@@ -37,16 +37,19 @@ export const UserProvider = ({ children }) => {
       ? userData.token
       : `noteApp__${userData.token}`;
 
-    const updatedData = { ...userData, token };
+    const updatedData = {
+      ...userData, // ← should contain _id and other info
+      token,
+    };
 
     setUser(updatedData);
-    localStorage.setItem("userData", JSON.stringify(updatedData));
+    localStorage.setItem("userData", JSON.stringify(updatedData)); // ✅ same key
   };
 
   // Clear user state and localStorage
   const clearUser = () => {
     setUser(null);
-    localStorage.removeItem("userData");
+    localStorage.removeItem("userData"); // ✅ same key
   };
 
   return (

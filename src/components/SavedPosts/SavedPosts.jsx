@@ -26,7 +26,6 @@ const SavedPosts = () => {
           },
         }
       );
-      // Filter out any null or invalid posts
       const validPosts = response.data.filter(
         post => post && post._id && (post.title || post.content)
       );
@@ -69,22 +68,15 @@ const SavedPosts = () => {
   }, [user]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 min-h-screen flex flex-col">
       <div className="flex items-center mb-6">
         <FiBookmark className="text-indigo-600 text-2xl mr-2" />
         <h1 className="text-2xl font-bold text-gray-800">Saved Posts</h1>
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <ThreeDots
-            height="60"
-            width="60"
-            radius="9"
-            color="#6366f1"
-            ariaLabel="three-dots-loading"
-            visible={true}
-          />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         </div>
       ) : error ? (
         <motion.div
@@ -95,10 +87,10 @@ const SavedPosts = () => {
           {error}
         </motion.div>
       ) : savedPosts.length > 0 ? (
-        <motion.ul className="space-y-4">
+        <motion.ul className="space-y-4 flex-1">
           <AnimatePresence>
             {savedPosts.map((post) => (
-              post && ( // Additional null check
+              post && (
                 <motion.li
                   key={post._id}
                   initial={{ opacity: 0, y: 10 }}
@@ -146,7 +138,7 @@ const SavedPosts = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center"
+          className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center flex-1 flex flex-col items-center justify-center"
         >
           <FiBookmark className="mx-auto text-4xl text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-700 mb-2">No saved posts yet</h3>

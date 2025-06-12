@@ -128,6 +128,7 @@ const AllProducts = () => {
     formData.append("price", newProduct.price);
     formData.append("link", newProduct.link);
 
+
     try {
       await axios.post(`${API_BASE_URL}/admin/`, formData, {
         headers: {
@@ -152,22 +153,28 @@ const AllProducts = () => {
   };
 
   const confirmDelete = async () => {
-    if (!token || !productToDelete) return;
+    if (!token || !productToDelete?._id) return;
 
     try {
       await axios.delete(`${API_BASE_URL}/admin/${productToDelete._id}`, {
-        headers: { token }
+        headers: {
+          "Content-Type": "application/json",
+          token,
+        },
       });
 
       toast.success("Product deleted successfully");
       setProducts(products.filter(p => p._id !== productToDelete._id));
     } catch (err) {
       handleApiError(err, "Failed to delete product");
+      console.log(err);
+
     } finally {
       setShowDeletePopup(false);
       setProductToDelete(null);
     }
   };
+
 
   const handleEditClick = (product) => {
     setProductToUpdate(product);
@@ -259,14 +266,8 @@ const AllProducts = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <ThreeDots
-          height="80"
-          width="80"
-          radius="9"
-          color="#4f46e5"
-          ariaLabel="loading"
-        />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }

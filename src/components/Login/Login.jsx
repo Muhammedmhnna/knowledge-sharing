@@ -7,7 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useUser } from '../../Context/UserContext.jsx';
-
+import { jwtDecode } from 'jwt-decode';
 const Login = () => {
   const { user, updateUser } = useUser();
   const [apiError, setApiError] = useState("");
@@ -24,23 +24,29 @@ const Login = () => {
       .required('Password is required'),
   });
 
+ // npm install jwt-decode
+
   const handleLogin = async (formValues) => {
     setIsLoading(true);
     try {
       const apiResponse = await axios.post("https://knowledge-sharing-pied.vercel.app/user/login", formValues);
-
+  
       setApiSuccess(apiResponse?.data?.message);
       setApiError("");
-
-      const { token, user } = apiResponse.data;
-
+  
+      const { token } = apiResponse.data;
+  
+      // Decode the JWT token to extract user info
+      const decoded = jwtDecode(token); // contains id, email, role
       const userData = {
-        ...user,
-        token,
+        _id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+        token: `noteApp__${token}`,
       };
-
+  
       updateUser(userData);
-
+  
       setTimeout(() => {
         navigate("/home");
       }, 2000);
@@ -53,6 +59,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+  
 
 
   const formik = useFormik({

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import CategoriesSidebar from "../CategoriesSidebar/CategoriesSidebar.jsx";
+import EditPost from '../EditPost/EditPost.jsx';
 import axios from "axios";
 import { MdDelete } from "react-icons/md";
 import {
@@ -19,6 +20,7 @@ import {
   FaUserCircle,
   FaReply,
   FaTrash,
+  FaArrowRight
 } from "react-icons/fa";
 import { BiSolidLike } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
@@ -282,13 +284,11 @@ export default function Post() {
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setSearchQuery(transcript);
-      toast.success(`Searching for: ${transcript}`);
     };
 
     recognition.onerror = (event) => {
       console.error("Speech recognition error", event.error);
       setIsListening(false);
-      toast.error("Voice recognition failed. Please try again.");
     };
 
     recognition.onend = () => {
@@ -316,22 +316,65 @@ export default function Post() {
     } else {
       setIsListening(true);
       recognitionRef.current.start();
-      toast.info("Listening... Speak now");
+    }
+  };
+  const handleEditPost = async (postId) => {
+    try {
+      const postToEdit = posts.find((p) => p._id === postId);
+      if (!postToEdit) {
+        toast.error("Post not found");
+        return;
+      }
+
+      const postAuthorId = postToEdit.author?._id?.toString();
+      const currentUserId = user?._id?.toString();
+
+      if (postAuthorId !== currentUserId) {
+        toast.error("You can only edit your own posts");
+        return;
+      }
+
+      setIsOpen(false);
+      navigate(`/editPost/${postId}`);
+    } catch (error) {
+      toast.error("Failed to validate post for editing.");
+      console.error("Edit post error:", error);
     }
   };
 
+
+  const postAuthorId =
+    post?.author && typeof post.author === "object"
+      ? post.author._id
+      : post?.author;
+
+  const currentUserId = user?._id;
+
+  const isAuthor = postAuthorId?.toString() === currentUserId?.toString();
+
+
   // Handle delete post
   const handleDeletePost = async (postId) => {
+
+    console.log("Post author:", post?.author);
+    console.log("User ID:", user?._id);
+    console.log("Is author?", isAuthor);
+
+
     try {
-      // تحقق مما إذا كان البوست للمستخدم الحالي
-      const postToDelete = posts.find((post) => post._id === postId);
+      const postToDelete = posts.find((p) => p._id === postId);
 
       if (!postToDelete) {
         toast.error("Post not found");
         return;
       }
 
-      if (postToDelete.author._id !== user?._id) {
+      const postAuthorId = postToDelete.author?._id?.toString();
+      const currentUserId = user?._id?.toString();
+
+
+
+      if (postAuthorId !== currentUserId) {
         toast.error("You can only delete your own posts");
         return;
       }
@@ -344,13 +387,15 @@ export default function Post() {
           },
         }
       );
+
       toast.success("Post deleted successfully!");
       await getAllPosts();
     } catch (error) {
       toast.error("Failed to delete post. Try again.");
-      console.error("Delete post error:", error);
+      console.error("Delete post error:", error.response?.data || error);
     }
   };
+
 
   // Handle save post
   const handleSavePost = async (postId, e) => {
@@ -671,8 +716,8 @@ export default function Post() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
         className={`mt-3 ${depth > 0
-            ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
-            : ""
+          ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
+          : ""
           }`}
       >
         <div className="flex gap-3 items-start">
@@ -826,30 +871,30 @@ export default function Post() {
               transition={{ duration: 0.2 }}
               className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-100"
             >
-              <div className="py-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/editPost/${post._id}`);
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  <FaEdit className="mr-2" size={14} />
-                  Edit Post
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeletePost(post._id);
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-                >
-                  <FaTrash className="mr-2" size={14} />
-                  Delete Post
-                </button>
-              </div>
+              {post?.author?._id === user?._id && (
+                <div className="py-1">
+                  <button
+                    onClick={() => handleEditPost(post._id)}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                  >
+                    <FaEdit className="mr-2" size={14} />
+                    Edit Post
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePost(post._id);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                  >
+                    <FaTrash className="mr-2" size={14} />
+                    Delete Post
+                  </button>
+                </div>
+              )}
+
             </motion.div>
           )}
         </AnimatePresence>
@@ -936,8 +981,8 @@ export default function Post() {
                   handleVoiceSearch();
                 }}
                 className={`p-2.5 rounded-lg ${isListening
-                    ? "bg-red-100 text-red-500 shadow-sm"
-                    : "text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-gray-100"
+                  ? "bg-red-100 text-red-500 shadow-sm"
+                  : "text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-gray-100"
                   }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -1008,14 +1053,14 @@ export default function Post() {
                         className="flex items-center mb-3 cursor-pointer"
                         onClick={() => navigate(`/post/${post._id}`)}
                       >
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-md">
                           {post.author?.name?.charAt(0) || "U"}
                         </div>
                         <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-md font-medium text-gray-900">
                             {post.author?.name || "Unknown"}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm text-gray-500">
                             {new Date(post.createdAt).toLocaleDateString(
                               "en-US",
                               {
@@ -1029,43 +1074,70 @@ export default function Post() {
                       </div>
                       {post.sub_category && (
                         <div className="mb-2">
-                          <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-md">
+                          <span className="inline-block bg-indigo-100 text-indigo-800 text-sm px-3 py-2 rounded-md">
                             {post.sub_category.name}
                           </span>
                         </div>
                       )}
 
                       <h2
-                        className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 cursor-pointer"
+                        className="text-2xl font-bold text-gray-900 mb-2 line-clamp-2 cursor-pointer"
                         onClick={() => navigate(`/post/${post._id}`)}
                       >
                         {post.title}
                       </h2>
 
                       <p
-                        className="text-gray-600 text-sm mb-4 line-clamp-3 cursor-pointer"
+                        className="text-gray-600 text-lg mb-4 line-clamp-3 cursor-pointer"
                         onClick={() => navigate(`/post/${post._id}`)}
                       >
                         {post.content}
                       </p>
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{
+                          scale: 1.05,
+                          boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)"
+                        }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={(e) => {
                           e.stopPropagation();
                           speakText(post.title, post.content);
                         }}
-                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6"
+                        className="flex items-center gap-3 px-3 py-1 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-indigo-200/50 transition-all duration-300 mb-6"
+                        style={{
+                          border: "none",
+                          outline: "none",
+                          cursor: "pointer",
+                          position: "relative",
+                          overflow: "hidden"
+                        }}
                       >
+                        <motion.span
+                          initial={{ x: -20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ duration: 0.5 }}
+                          className="absolute left-0 top-0 w-full h-full bg-blue opacity-0 hover:opacity-10"
+                        />
+
                         <motion.div
                           animate={{
-                            scale: [1, 1.1, 1],
+                            scale: [1, 1.2, 1],
                             transition: { repeat: Infinity, duration: 2 },
                           }}
+                          className="text-xl text-white"
                         >
-                          <FaVolumeUp className="text-xl" />
+                          <FaVolumeUp />
                         </motion.div>
-                        <span className="font-medium">Listen to this post</span>
+
+                        <span className="font-semibold text-lg tracking-wide">Listen to this post</span>
+
+                        <motion.div
+                          whileHover={{ x: 5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                          className="ml-1"
+                        >
+                          <FaArrowRight className="text-xl" />
+                        </motion.div>
                       </motion.button>
 
                       {post.files?.urls?.length > 0 && (
@@ -1076,10 +1148,10 @@ export default function Post() {
                               href={file.secure_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center text-indigo-600 hover:underline text-xs mr-3 mb-2"
+                              className="inline-flex items-center text-indigo-600 hover:underline text-xl mr-3 mb-2"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <FaFilePdf className="mr-1" size={12} />
+                              <FaFilePdf className="mr-1" size={20} />
                               {file.original_filename?.slice(0, 15) || "File"}
                             </a>
                           ))}
@@ -1095,8 +1167,8 @@ export default function Post() {
                               handleLikePost(post._id);
                             }}
                             className={`flex cursor-pointer items-center gap-1 ${likeCounts[post._id]?.isLiked
-                                ? "text-indigo-500"
-                                : "text-gray-500"
+                              ? "text-indigo-500"
+                              : "text-gray-500"
                               }`}
                           >
                             <motion.div
@@ -1110,7 +1182,7 @@ export default function Post() {
                             >
                               <BiSolidLike className="text-xl" />
                             </motion.div>
-                            <span className="text-sm">
+                            <span className="text-lg">
                               {likeCounts[post._id]?.count || 0}
                             </span>
                           </motion.div>
@@ -1122,8 +1194,8 @@ export default function Post() {
                             className="flex items-center cursor-pointer gap-1"
                             title="Comment"
                           >
-                            <FaRegCommentDots />
-                            <span className="text-black">
+                            <FaRegCommentDots className="text-lg" />
+                            <span className="text-black text-lg">
                               {comments[post._id]?.length || 0}
                             </span>
                           </div>

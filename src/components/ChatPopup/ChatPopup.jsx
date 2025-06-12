@@ -170,7 +170,7 @@ const ChatPopup = () => {
             {/* Floating Chat Button */}
             <motion.button
                 onClick={() => setOpen(!open)}
-                className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-xl hover:shadow-lg transition-all z-50"
+                className="fixed bottom-8 right-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-xl hover:shadow-lg transition-all z-50"
                 variants={buttonVariants}
                 initial="initial"
                 whileHover="hover"
@@ -212,7 +212,7 @@ const ChatPopup = () => {
                         animate="visible"
                         exit="exit"
                         variants={popupVariants}
-                        className="fixed bottom-24 right-8 w-90 h-[32rem] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col z-50 border border-gray-200"
+                        className="fixed bottom-24 right-5 w-90 h-[32rem] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col z-50 border border-gray-200"
                     >
                         {/* Chat header */}
                         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white flex items-center justify-between">
