@@ -560,6 +560,71 @@ export default function SpecPost() {
       </motion.div>
     ));
   };
+  // Post options dropdown component
+  const PostOptions = ({ post }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, []);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-100"
+            >
+              <div className="py-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/editPost/${post._id}`);
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                >
+                  <FaEdit className="mr-2" size={14} />
+                  Edit Post
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePost(post._id);
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                >
+                  <FaTrash className="mr-2" size={14} />
+                  Delete Post
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
 
   // Loading state
   if (isLoading) {
@@ -732,30 +797,33 @@ export default function SpecPost() {
               </motion.div>
             </div>
 
-            <div className="flex gap-4">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/editPost/${post._id}`);
-                }}
-                className="cursor-pointer text-gray-500 hover:text-indigo-600"
-              >
-                <FaEdit size={20} />
-              </motion.button>
+            <div className="flex gap-2">
+              {post.author?._id === user?._id && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/editPost/${post._id}`);
+                    }}
+                    className="cursor-pointer text-gray-500 hover:text-blue-800"
+                    title="Edit"
+                  >
+                    <FaEdit size={20} />
+                  </button>
 
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeletePost(post._id);
-                }}
-                className="cursor-pointer text-gray-500 hover:text-red-600"
-              >
-                <MdDelete size={20} />
-              </motion.button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePost(post._id);
+                    }}
+                    className="cursor-pointer text-gray-500 hover:text-red-800"
+                    title="Delete"
+                  >
+                    <MdDelete size={20} />
+                  </button>
+                </>
+              )}
+              <PostOptions post={post} />
             </div>
           </div>
 

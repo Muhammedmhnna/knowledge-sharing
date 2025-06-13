@@ -332,7 +332,7 @@ const ContinueAsGuest = () => {
                                     className="w-full relative overflow-hidden bg-blue-500 hover:bg-blue-600 border border-blue-400 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 group"
                                 >
                                     <span className="relative z-10 flex items-center justify-center gap-2">
-                                        <span className="h-2 w-2 bg-purple-300 rounded-full animate-pulse"></span>
+                                        <span className="h-2 w-2 bg-green-300 rounded-full animate-pulse"></span>
                                         Create Account
                                     </span>
                                     <span className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
