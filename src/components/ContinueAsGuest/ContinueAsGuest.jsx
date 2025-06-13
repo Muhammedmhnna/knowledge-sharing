@@ -5,7 +5,7 @@ import { FaVolumeUp, FaArrowRight, FaFilePdf, FaRegCommentDots, FaBookmark, FaEd
 import { BiSolidLike } from 'react-icons/bi';
 import { MdDelete } from 'react-icons/md';
 import Modal from 'react-modal';
-import styles from './ContinueAsGuest.module.css'; // Import CSS Module
+
 
 Modal.setAppElement('#root'); // Set the root element for accessibility
 
@@ -68,8 +68,8 @@ const ContinueAsGuest = () => {
     }
 
     return (
-        <div className={styles.container}>
-            <h1 className={styles.title}>Continue as Guest</h1>
+        <div className="max-w-[1200px] mx-auto p-4">
+            <h1 className="text-2xl font-bold text-center text-gray-900 mb-8">Continue as Guest</h1>
             <p className="text-lg text-gray-600 mb-8 text-center">
                 You're viewing posts as a guest. Register or login to interact with content.
             </p>
@@ -81,7 +81,7 @@ const ContinueAsGuest = () => {
                             {post.thumbnail && (
                                 <div
                                     className="md:w-2/5 h-48 md:h-auto relative overflow-hidden cursor-pointer"
-                                    onClick={() => navigate(`/post/${post._id}`)}
+
                                 >
                                     <motion.img
                                         src={post.thumbnail}
@@ -97,7 +97,7 @@ const ContinueAsGuest = () => {
                             <div className={`${post.thumbnail ? "md:w-3/5" : "w-full"} p-5`}>
                                 <div
                                     className="flex items-center mb-3 cursor-pointer"
-                                    onClick={() => navigate(`/post/${post._id}`)}
+
                                 >
                                     <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-md">
                                         {post.author?.name?.charAt(0) || "U"}
@@ -125,14 +125,14 @@ const ContinueAsGuest = () => {
 
                                 <h2
                                     className="text-2xl font-bold text-gray-900 mb-2 line-clamp-2 cursor-pointer"
-                                    onClick={() => navigate(`/post/${post._id}`)}
+
                                 >
                                     {post.title}
                                 </h2>
 
                                 <p
                                     className="text-gray-600 text-lg mb-4 line-clamp-3 cursor-pointer"
-                                    onClick={() => navigate(`/post/${post._id}`)}
+
                                 >
                                     {post.content}
                                 </p>
@@ -183,17 +183,18 @@ const ContinueAsGuest = () => {
                                 {post.files?.urls?.length > 0 && (
                                     <div className="mb-4">
                                         {post.files.urls.slice(0, 2).map((file) => (
-                                            <a
+                                            <div
                                                 key={file._id}
-                                                href={file.secure_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center text-indigo-600 hover:underline text-xl mr-3 mb-2"
-                                                onClick={(e) => e.stopPropagation()}
+                                                className="inline-flex items-center text-indigo-600 hover:underline text-xl mr-3 mb-2 cursor-pointer"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    handleGuestAction(e);
+                                                }}
                                             >
                                                 <FaFilePdf className="mr-1" size={20} />
-                                                {file.original_filename?.slice(0, 15) || "File"}
-                                            </a>
+                                                <span>{file.original_filename?.slice(0, 15) || "File"}</span>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
@@ -261,90 +262,125 @@ const ContinueAsGuest = () => {
                 onRequestClose={closeAuthModal}
                 contentLabel="Authentication Required"
                 className="outline-none"
-                overlayClassName="fixed inset-0 flex items-center justify-center p-4 bg-black/30 backdrop-blur-md transition-all duration-300"
+                overlayClassName="fixed inset-0 flex items-center justify-center p-4 bg-blue-400/80 backdrop-blur-xs transition-all duration-700"
+                closeTimeoutMS={700}
             >
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                    className="relative w-full max-w-md"
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    transition={{
+                        type: "spring",
+                        damping: 20,
+                        stiffness: 300,
+                    }}
+                    className="relative w-full max-w-sm"
                 >
-                    {/* Floating gradient bubbles background */}
-                    <div className="absolute -top-20 -left-20 w-40 h-40 bg-indigo-500/30 rounded-full filter blur-3xl animate-float"></div>
-                    <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-purple-500/40 rounded-full filter blur-3xl animate-float-delay"></div>
+                    {/* Geometric background elements */}
+                    <div className="absolute -top-32 -left-32 w-64 h-64 bg-purple-200/30 rounded-full mix-blend-overlay animate-float-slow"></div>
+                    <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-300/30 rotate-45 mix-blend-overlay animate-float-slow-delay"></div>
 
-                    {/* Glass card */}
-                    <div className="relative bg-gradient-to-r from-indigo-500/30 via-purple-500/40 to-blue-500/50 border border-white/30 rounded-2xl shadow-2xl overflow-hidden">
-                        <div className="p-8">
-                            <div className="text-center mb-8">
-                                <motion.h2
-                                    initial={{ y: -20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="text-3xl font-bold text-white drop-shadow-md mb-3"
-                                >
-                                    Welcome Back!
-                                </motion.h2>
-                                <motion.p
-                                    initial={{ y: -10, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.2 }}
-                                    className="text-white/90"
-                                >
-                                    Join our community to unlock all features
-                                </motion.p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <motion.button
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.3 }}
-                                    whileHover={{
-                                        scale: 1.05,
-                                        boxShadow: "0 8px 20px rgba(99, 102, 241, 0.4)"
-                                    }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => navigateToAuth('register')}
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-indigo-500/30 transition-all duration-300"
-                                >
-                                    Create Account
-                                </motion.button>
-
-                                <motion.button
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.4 }}
-                                    whileHover={{
-                                        scale: 1.05,
-                                        boxShadow: "0 8px 20px rgba(255, 255, 255, 0.2)"
-                                    }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => navigateToAuth('login')}
-                                    className="w-full bg-white/20 border-2 border-white/30 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-white/20 transition-all duration-300 backdrop-blur-sm"
-                                >
-                                    Sign In
-                                </motion.button>
-
+                    {/* Card container */}
+                    <div className="relative bg-blue-50 border border-blue-100 rounded-2xl shadow-xl overflow-hidden">
+                        {/* Animated header */}
+                        <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: 180 }}
+                            transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                            className="relative bg-gradient-to-br from-blue-100 to-purple-50 overflow-hidden"
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center">
                                 <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.5 }}
-                                    className="pt-4"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.6, type: "spring" }}
+                                    className="text-center p-6"
                                 >
-                                    <button
-                                        onClick={closeAuthModal}
-                                        className="text-white/80 hover:text-white text-sm font-medium transition-colors duration-200"
-                                    >
-                                        Continue exploring as guest →
-                                    </button>
+                                    <h2 className="text-3xl font-bold text-blue-900 mb-2">Join Us</h2>
+                                    <p className="text-blue-700/80">Unlock all features</p>
                                 </motion.div>
                             </div>
+
+                            {/* Floating dots pattern */}
+                            <div className="absolute inset-0 opacity-20">
+                                {[...Array(20)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.4 + i * 0.02, duration: 0.6 }}
+                                        className="absolute w-1 h-1 bg-blue-600 rounded-full"
+                                        style={{
+                                            left: `${Math.random() * 100}%`,
+                                            top: `${Math.random() * 100}%`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        {/* Content area */}
+                        <div className="p-6 space-y-5">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8 }}
+                                className="space-y-4"
+                            >
+                                <button
+                                    onClick={() => navigateToAuth('register')}
+                                    className="w-full relative overflow-hidden bg-blue-500 hover:bg-blue-600 border border-blue-400 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 group"
+                                >
+                                    <span className="relative z-10 flex items-center justify-center gap-2">
+                                        <span className="h-2 w-2 bg-purple-300 rounded-full animate-pulse"></span>
+                                        Create Account
+                                    </span>
+                                    <span className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                                </button>
+
+                                <button
+                                    onClick={() => navigateToAuth('login')}
+                                    className="w-full relative overflow-hidden bg-white hover:bg-blue-50 border border-blue-200 text-blue-800 py-3 px-6 rounded-lg font-medium transition-all duration-300 group"
+                                >
+                                    <span className="relative z-10 flex items-center justify-center gap-2">
+                                        <span className="h-2 w-2 bg-blue-400 rounded-full animate-pulse"></span>
+                                        Sign In
+                                    </span>
+                                    <span className="absolute inset-0 bg-gradient-to-r from-blue-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                                </button>
+                            </motion.div>
+
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1 }}
+                                className="pt-2 text-center"
+                            >
+                                <button
+                                    onClick={closeAuthModal}
+                                    className="text-blue-600/80 hover:text-blue-800 text-sm transition-colors duration-300 flex items-center justify-center gap-1 mx-auto"
+                                >
+                                    <span>Not now</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </motion.div>
                         </div>
+
+                        {/* Animated footer */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1.2 }}
+                            className="px-6 py-3 bg-blue-100/50 border-t border-blue-200 text-center"
+                        >
+                            <p className="text-xs text-blue-700/60">By continuing, you agree to our Terms</p>
+                        </motion.div>
                     </div>
                 </motion.div>
             </Modal>
+
         </div>
     );
 };

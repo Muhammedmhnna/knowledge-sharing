@@ -219,7 +219,7 @@ const WelcomePage = () => {
                     className="mt-12 text-center text-blue-200 text-sm"
                 >
                     <button
-                        onClick={() => navigate('/guest')}
+                        onClick={() => navigate('/continue-guest')}
                         className="cursor-pointer hover:text-white underline underline-offset-4 decoration-blue-300/50 hover:decoration-white transition-colors"
                     >
                         Continue as guest
