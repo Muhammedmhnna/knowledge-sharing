@@ -164,7 +164,10 @@ const Profile = () => {
   };
 
   const handleChangePassword = () => {
-    navigate("/forget-password");
+    navigate("/reset-password");
+  };
+  const handlePrivacySettings = () => {
+    navigate("/privacy");
   };
 
   const handleBackToHome = () => {
@@ -835,7 +838,8 @@ const Profile = () => {
                         />
                       </svg>
                     </button>
-                    <button className="cursor-pointer w-full flex items-center justify-between p-4 bg-white rounded-lg hover:bg-indigo-100 transition-colors">
+                    <button className="cursor-pointer w-full flex items-center justify-between p-4 bg-white rounded-lg hover:bg-indigo-100 transition-colors"
+                    onClick={handlePrivacySettings}>
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-indigo-100 rounded-lg">
                           <svg

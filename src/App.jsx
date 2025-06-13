@@ -32,6 +32,8 @@ import EditPost from "./components/EditPost/EditPost.jsx";
 import { AdminProvider } from "./Context/AdminContext.jsx";
 import AdminLayout from "./components/AdminLayout/AdminLayout.jsx";
 import AdminProtectedRoute from "./components/AdminProtectedRoute/AdminProtectedRoute.jsx";
+import PrivacySettings from "./components/PrivacySettings/PrivacySettings.jsx";
+import ContinueAsGuest from "./components/ContinueAsGuest/ContinueAsGuest.jsx";
 const router = createBrowserRouter([
   {
     path: "",
@@ -82,6 +84,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Post />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "privacy",
+        element: (
+          <ProtectedRoute>
+            <PrivacySettings />
           </ProtectedRoute>
         ),
       },
@@ -140,6 +150,10 @@ const router = createBrowserRouter([
       {
         path: "reset-password",
         element: <ResetPassword />,
+      },
+      {
+        path: "continue-guest",
+        element: <ContinueAsGuest />,
       },
       {
         path: "notifications",

@@ -13,7 +13,7 @@ import {
   FiAlertTriangle,
   FiSearch,
   FiChevronUp,
-  FiChevronDown
+  FiChevronDown,
 } from "react-icons/fi";
 import { useAdmin } from "../../Context/AdminContext.jsx";
 
@@ -23,7 +23,10 @@ const AllProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: "name", direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "name",
+    direction: "asc",
+  });
 
   // Form states
   const [showForm, setShowForm] = useState(false);
@@ -31,7 +34,7 @@ const AllProducts = () => {
     name: "",
     description: "",
     price: "",
-    link: ""
+    link: "",
   });
   const [productImage, setProductImage] = useState(null);
 
@@ -91,9 +94,10 @@ const AllProducts = () => {
 
     // Filter by search term
     if (searchTerm) {
-      filteredProducts = filteredProducts.filter((product) =>
-        (product.name ?? "").toLowerCase().includes(safeSearchTerm) ||
-        (product.description ?? "").toLowerCase().includes(safeSearchTerm)
+      filteredProducts = filteredProducts.filter(
+        (product) =>
+          (product.name ?? "").toLowerCase().includes(safeSearchTerm) ||
+          (product.description ?? "").toLowerCase().includes(safeSearchTerm)
       );
     }
 
@@ -128,7 +132,6 @@ const AllProducts = () => {
     formData.append("price", newProduct.price);
     formData.append("link", newProduct.link);
 
-
     try {
       await axios.post(`${API_BASE_URL}/admin/`, formData, {
         headers: {
@@ -153,28 +156,22 @@ const AllProducts = () => {
   };
 
   const confirmDelete = async () => {
-    if (!token || !productToDelete?._id) return;
+    if (!token || !productToDelete) return;
 
     try {
       await axios.delete(`${API_BASE_URL}/admin/${productToDelete._id}`, {
-        headers: {
-          "Content-Type": "application/json",
-          token,
-        },
+        headers: { token },
       });
 
       toast.success("Product deleted successfully");
-      setProducts(products.filter(p => p._id !== productToDelete._id));
+      setProducts(products.filter((p) => p._id !== productToDelete._id));
     } catch (err) {
       handleApiError(err, "Failed to delete product");
-      console.log(err);
-
     } finally {
       setShowDeletePopup(false);
       setProductToDelete(null);
     }
   };
-
 
   const handleEditClick = (product) => {
     setProductToUpdate(product);
@@ -200,11 +197,9 @@ const AllProducts = () => {
     };
 
     try {
-      await axios.put(
-        `${API_BASE_URL}/admin/${productToUpdate._id}`,
-        payload,
-        { headers: { "Content-Type": "application/json", token } }
-      );
+      await axios.put(`${API_BASE_URL}/admin/${productToUpdate._id}`, payload, {
+        headers: { "Content-Type": "application/json", token },
+      });
 
       toast.success("Product updated successfully");
       fetchProducts();
@@ -239,9 +234,25 @@ const AllProducts = () => {
 
   const getSortIndicator = (key) => {
     if (sortConfig.key !== key) return null;
-    return sortConfig.direction === "asc" ?
-      <FiChevronUp className="ml-1" /> :
-      <FiChevronDown className="ml-1" />;
+    return sortConfig.direction === "asc" ? (
+      <FiChevronUp className="ml-1" />
+    ) : (
+      <FiChevronDown className="ml-1" />
+    );
+  };
+
+  // New function to handle add product click
+  const handleAddProductClick = () => {
+    setShowForm((prev) => !prev);
+    if (!showForm) {
+      setNewProduct({
+        name: "",
+        description: "",
+        price: "",
+        link: "",
+      });
+      setProductImage(null);
+    }
   };
 
   // Render states
@@ -249,12 +260,14 @@ const AllProducts = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+          <h2 className="text-2xl font-bold text-red-600 mb-4">
+            Access Denied
+          </h2>
           <p className="text-gray-600 mb-6">
             Admin credentials required to access this page.
           </p>
           <button
-            onClick={() => window.location.href = "/admin/login"}
+            onClick={() => (window.location.href = "/admin/login")}
             className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-200"
           >
             Go to Admin Login
@@ -295,7 +308,7 @@ const AllProducts = () => {
 
       {/* Delete Confirmation Popup */}
       {showDeletePopup && (
-        <div className="fixed inset-0  bg-gradient-to-r from-indigo-500/30 via-purple-500/40 to-blue-500/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gradient-to-r from-indigo-500/30 via-purple-500/40 to-blue-500/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-fade-in">
             <div className="flex flex-col items-center">
               <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
@@ -306,7 +319,8 @@ const AllProducts = () => {
               </h3>
               <div className="mt-2 text-center">
                 <p className="text-sm text-gray-500">
-                  Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
+                  Are you sure you want to delete "{productToDelete?.name}"?
+                  This action cannot be undone.
                 </p>
               </div>
               <div className="mt-6 flex gap-3 w-full">
@@ -334,10 +348,11 @@ const AllProducts = () => {
       {showUpdatePopup && (
         <div className="fixed inset-0 bg-gradient-to-r from-indigo-500/30 via-purple-500/40 to-blue-500/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 animate-fade-in">
-
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Update Product</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Update Product
+              </h3>
               <button
                 onClick={() => setShowUpdatePopup(false)}
                 className="text-gray-400 hover:text-gray-500"
@@ -350,13 +365,18 @@ const AllProducts = () => {
             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-4">
                 <img
-                  src={`${productToUpdate?.productImage?.url}?t=${new Date().getTime()}`}
+                  src={`${productToUpdate?.productImage?.url
+                    }?t=${new Date().getTime()}`}
                   alt={productToUpdate?.name}
                   className="w-16 h-16 object-cover rounded-lg"
                 />
                 <div>
-                  <h4 className="font-medium text-gray-900">{productToUpdate?.name}</h4>
-                  <p className="text-sm text-gray-500">${productToUpdate?.price}</p>
+                  <h4 className="font-medium text-gray-900">
+                    {productToUpdate?.name}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    ${productToUpdate?.price}
+                  </p>
                 </div>
               </div>
             </div>
@@ -364,7 +384,6 @@ const AllProducts = () => {
             {/* Update Form */}
             <form onSubmit={confirmUpdate} className="space-y-4">
               <div className="flex gap-5">
-
                 {/* Left Column */}
                 <div className="flex-1 space-y-4">
                   <div>
@@ -392,7 +411,10 @@ const AllProducts = () => {
                       className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[120px]"
                       value={newProduct.description}
                       onChange={(e) =>
-                        setNewProduct({ ...newProduct, description: e.target.value })
+                        setNewProduct({
+                          ...newProduct,
+                          description: e.target.value,
+                        })
                       }
                       required
                       minLength={10}
@@ -488,16 +510,16 @@ const AllProducts = () => {
             </form>
           </div>
         </div>
-
       )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Product Inventory</h1>
             <p className="text-gray-600">
-              {filteredAndSortedProducts.length} {filteredAndSortedProducts.length === 1 ? "product" : "products"} found
+              {filteredAndSortedProducts.length}{" "}
+              {filteredAndSortedProducts.length === 1 ? "product" : "products"}{" "}
+              found
             </p>
           </div>
 
@@ -516,7 +538,7 @@ const AllProducts = () => {
             </div>
 
             <button
-              onClick={() => setShowForm(!showForm)}
+              onClick={handleAddProductClick}
               className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-200"
             >
               {showForm ? <FiX size={18} /> : <FiPlus size={18} />}
@@ -525,20 +547,20 @@ const AllProducts = () => {
           </div>
         </div>
 
-        {/* Add/Edit Product Form */}
+        {/* Add Product Form */}
         {showForm && (
           <div className="mb-8 bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300">
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4 text-gray-800">
-                {productToUpdate ? "Edit Product" : "Add New Product"}
+                Add New Product
               </h2>
 
-              <form onSubmit={productToUpdate ? confirmUpdate : handleAddProduct}>
+              <form onSubmit={handleAddProduct}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Product Image {!productToUpdate && <span className="text-red-500">*</span>}
+                        Product Image <span className="text-red-500">*</span>
                       </label>
                       <div className="flex items-center gap-4">
                         <div className="relative flex-1">
@@ -546,7 +568,7 @@ const AllProducts = () => {
                             type="file"
                             accept="image/*"
                             onChange={(e) => setProductImage(e.target.files[0])}
-                            required={!productToUpdate}
+                            required
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             id="productImage"
                           />
@@ -560,18 +582,11 @@ const AllProducts = () => {
                               </span>
                             ) : (
                               <span className="text-gray-500">
-                                {productToUpdate ? "Change image (not supported)" : "Click to upload image"}
+                                Click to upload image
                               </span>
                             )}
                           </label>
                         </div>
-                        {productToUpdate && productImage === null && (
-                          <img
-                            src={`${productToUpdate.productImage?.url}?t=${new Date().getTime()}`}
-                            alt="Current product"
-                            className="w-16 h-16 object-cover rounded-lg border"
-                          />
-                        )}
                       </div>
                     </div>
 
@@ -583,7 +598,9 @@ const AllProducts = () => {
                         type="text"
                         className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         value={newProduct.name}
-                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({ ...newProduct, name: e.target.value })
+                        }
                         required
                         minLength={2}
                         maxLength={50}
@@ -598,7 +615,12 @@ const AllProducts = () => {
                         type="number"
                         className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         value={newProduct.price}
-                        onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            price: e.target.value,
+                          })
+                        }
                         required
                         min="0.01"
                         step="0.01"
@@ -614,7 +636,12 @@ const AllProducts = () => {
                       <textarea
                         className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[120px]"
                         value={newProduct.description}
-                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            description: e.target.value,
+                          })
+                        }
                         required
                         minLength={10}
                         maxLength={500}
@@ -629,7 +656,9 @@ const AllProducts = () => {
                         type="url"
                         className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         value={newProduct.link}
-                        onChange={(e) => setNewProduct({ ...newProduct, link: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({ ...newProduct, link: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -651,14 +680,28 @@ const AllProducts = () => {
                   >
                     {isSubmitting ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Processing...
                       </>
-                    ) : productToUpdate ? (
-                      "Update Product"
                     ) : (
                       "Add Product"
                     )}
@@ -712,13 +755,17 @@ const AllProducts = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredAndSortedProducts.length > 0 ? (
                   filteredAndSortedProducts.map((product) => (
-                    <tr key={product._id} className="hover:bg-gray-50 transition">
+                    <tr
+                      key={product._id}
+                      className="hover:bg-gray-50 transition"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             <img
                               className="h-10 w-10 rounded-md object-cover"
-                              src={`${product.productImage?.url}?t=${new Date().getTime()}`}
+                              src={`${product.productImage?.url
+                                }?t=${new Date().getTime()}`}
                               alt={product.name}
                             />
                           </div>
@@ -772,7 +819,10 @@ const AllProducts = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                    <td
+                      colSpan="4"
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
                       No products found matching your criteria
                     </td>
                   </tr>

@@ -1058,7 +1058,7 @@ export default function Post() {
                         </div>
                         <div className="ml-3">
                           <p className="text-md font-medium text-gray-900">
-                            {post.author?.name || "Unknown"}
+                            {post.author?.name || "User"}
                           </p>
                           <p className="text-sm text-gray-500">
                             {new Date(post.createdAt).toLocaleDateString(
