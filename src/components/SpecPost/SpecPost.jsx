@@ -245,6 +245,35 @@ export default function SpecPost() {
       setIsLoadingSave(false);
     }
   };
+  // Add this component near your imports
+  const VerifiedBadge = ({ author }) => {
+    // Check if the author has a doctor role
+    const isDoctor = author?.role === 'doctor';
+
+    if (!isDoctor) return null;
+
+    return (
+      <motion.span
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        className="ml-1 inline-flex items-center"
+        title="Verified Doctor"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-4 h-4 text-green-500"
+        >
+          <path
+            fillRule="evenodd"
+            d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </motion.span>
+    );
+  };
 
   // Get likes count for a post
   const getLikesCount = async (postId) => {
@@ -453,9 +482,9 @@ export default function SpecPost() {
       >
         <div className="flex gap-3 items-start">
           <div className="flex-shrink-0">
-            {comment.author?.avatar ? (
+            {comment.author?.profileImage?.url ? (
               <img
-                src={comment.author.avatar}
+                src={comment.author.profileImage.url}
                 alt={comment.author.name}
                 className="w-8 h-8 rounded-full object-cover"
               />
@@ -469,14 +498,14 @@ export default function SpecPost() {
             <div className="bg-gray-50 rounded-xl p-3 relative group">
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {comment.author?.name || "Anonymous"}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-2">
+                  <div className="flex">
+                    <span className="text-lg font-semibold text-gray-900">
+                      {comment.author?.name || "Anonymous"}
+                    </span>
+                    {comment.author?._id && <VerifiedBadge userId={comment.author._id} />}
+                  </div>
+                  <span className="text-xs text-gray-500 ml-2 mt-1">
                     {new Date(comment.createdAt).toLocaleString([], {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -495,20 +524,9 @@ export default function SpecPost() {
                 </button>
               </div>
 
-              <p className="text-sm text-gray-700 mt-1">{comment.text}</p>
+              <p className="text-md text-gray-700 mt-1">{comment.text}</p>
 
-              <div className="flex items-center mt-2 space-x-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setParentId(parentId === comment._id ? null : comment._id);
-                  }}
-                  className="text-xs flex items-center text-gray-500 hover:text-blue-600 transition-colors"
-                >
-                  <FaReply className="mr-1" size={12} />
-                  Reply
-                </button>
-              </div>
+
             </div>
 
             {parentId === comment._id && (
@@ -534,15 +552,7 @@ export default function SpecPost() {
                   ) : (
                     <FaUserCircle className="text-gray-400 text-2xl flex-shrink-0" />
                   )}
-                  <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder={`Reply to ${comment.author?.name || "this comment"
-                      }...`}
-                    className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 bg-white"
-                    autoFocus
-                  />
+
                   <button
                     type="submit"
                     className="bg-blue-500 text-white px-3 py-2 rounded-full text-sm hover:bg-blue-600 transition-colors flex-shrink-0"
@@ -658,23 +668,42 @@ export default function SpecPost() {
       >
         <div className="flex-1">
           <div className="flex items-center mb-3">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
-              {post.author?.name?.charAt(0) || "U"}
+            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-base">
+              {post.author?.profileImage.url ? (
+                <img
+                  src={post.author.profileImage.url}
+                  alt={post.author.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-base">
+                  {post.author?.name?.charAt(0) || "U"}
+                </div>
+              )}
             </div>
-            <div className="ml-3">
-              <div className="text-sm text-gray-500 flex">
-                <div className="mr-1">by</div>
-                <span className="font-medium text-gray-700">
-                  {post.author?.name || "Unknown"}
-                </span>
+            <div className="ml-3 flex-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <p className="text-lg font-medium text-gray-900">
+                    {post.author?.name || "User"}
+                  </p>
+                  <VerifiedBadge author={post.author} />
+                </div>
+                <p className="text-xs text-gray-500">
+                  {new Date(post.createdAt).toLocaleString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
               </div>
-              <div className="text-xs text-gray-400">
+
+              <p className="text-xs text-gray-500 mt-1">
                 {new Date(post.createdAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "short",
                   day: "numeric",
                 })}
-              </div>
+              </p>
             </div>
           </div>
 
@@ -695,47 +724,100 @@ export default function SpecPost() {
           </p>
 
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{
+              scale: 1.03,
+              backgroundColor: "rgba(99, 102, 241, 0.1)" // indigo-600 with 10% opacity
+            }}
+            whileTap={{ scale: 0.98 }}
             onClick={(e) => {
               e.stopPropagation();
               speakText(post.title, post.content);
             }}
-            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6"
+            className={`
+    flex items-center gap-3 
+    px-4 py-3 rounded-xl
+    border border-indigo-200
+    bg-white/80 backdrop-blur-sm
+    shadow-sm hover:shadow-md
+    transition-all duration-200
+    text-indigo-600 hover:text-indigo-700
+    mb-6 w-full sm:w-auto
+  `}
           >
             <motion.div
               animate={{
                 scale: [1, 1.1, 1],
-                transition: { repeat: Infinity, duration: 2 },
+                transition: {
+                  repeat: Infinity,
+                  duration: 2,
+                  ease: "easeInOut"
+                },
               }}
+              className="relative"
             >
               <FaVolumeUp className="text-xl" />
+              {/* Optional sound waves animation */}
+              <motion.span
+                className="absolute -left-1 -top-1 w-7 h-7 border-2 border-indigo-400 rounded-full"
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.8, 0, 0.8],
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                  delay: 0.3
+                }}
+              />
             </motion.div>
-            <span className="font-medium">Listen to this post</span>
+
+            <span className="font-medium text-sm sm:text-base">
+              Listen to this post
+            </span>
+
+            {/* Optional play/pause indicator */}
+            <motion.div
+              className="ml-auto hidden sm:block"
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+            >
+              <svg
+                className="w-5 h-5 text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </motion.div>
           </motion.button>
 
           {post.files?.urls?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-2">
-                Attachments
-              </h4>
-              <div className="flex flex-wrap gap-3">
-                {post.files.urls.map((file) => (
-                  <motion.a
-                    key={file._id}
-                    whileHover={{ y: -2 }}
-                    href={file.secure_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
-                  >
-                    <FaFilePdf className="mr-2" />
-                    <span className="text-sm font-medium">
-                      {file.original_filename?.slice(0, 20) || "Download File"}
-                    </span>
-                  </motion.a>
-                ))}
-              </div>
+            <div className="mb-4">
+              {post.files.urls.slice(0, 2).map((file) => (
+                <img
+                  key={file._id}
+                  src={file.secure_url}
+                  alt={file.original_filename || "Post image"}
+                  className="max-w-70 h-auto rounded mb-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(file.secure_url, '_blank');
+                  }}
+                  style={{ cursor: 'pointer' }}
+                />
+              ))}
             </div>
           )}
 

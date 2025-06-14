@@ -34,6 +34,7 @@ import AdminLayout from "./components/AdminLayout/AdminLayout.jsx";
 import AdminProtectedRoute from "./components/AdminProtectedRoute/AdminProtectedRoute.jsx";
 import PrivacySettings from "./components/PrivacySettings/PrivacySettings.jsx";
 import ContinueAsGuest from "./components/ContinueAsGuest/ContinueAsGuest.jsx";
+import TeamPage from "./components/TeamPage/TeamPage.jsx";
 const router = createBrowserRouter([
   {
     path: "",
@@ -109,6 +110,12 @@ const router = createBrowserRouter([
           <ProtectedRoute>
             <EditPost />
           </ProtectedRoute>
+        ),
+      },
+      {
+        path: "teamPage",
+        element: (
+            <TeamPage />       
         ),
       },
       {

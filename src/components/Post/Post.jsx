@@ -17,7 +17,6 @@ import {
   FaDownload,
   FaEllipsisV,
   FaUserCircle,
-  FaReply,
   FaTrash,
 } from "react-icons/fa";
 import { BiSolidLike } from "react-icons/bi";
@@ -214,7 +213,43 @@ export default function Post() {
       toast.info("Listening... Speak now");
     }
   };
+  const getUserFromLocalStorage = () => {
+    try {
+      const userData = localStorage.getItem('role');
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error parsing user data from localStorage:', error);
+      return null;
+    }
+  };
+  const VerifiedBadge = ({ author }) => {
+    // Check if the author has a doctor role
+    const isDoctor = author?.role === 'doctor';
 
+    if (!isDoctor) return null;
+
+    return (
+      <motion.span
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        className="ml-1 inline-flex items-center"
+        title="Verified Doctor"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-4 h-4 text-green-500"
+        >
+          <path
+            fillRule="evenodd"
+            d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </motion.span>
+    );
+  };
   // Handle like post
   const handleLikePost = async (postId) => {
     if (!user) {
@@ -479,17 +514,17 @@ export default function Post() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
         className={`mt-3 ${depth > 0
-            ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
-            : ""
+          ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
+          : ""
           }`}
       >
         <div className="flex gap-3 items-start">
           <div className="flex-shrink-0">
-            {comment.author?.avatar ? (
+            {comment.author?.profileImage.url ? (
               <img
-                src={comment.author.avatar}
+                src={comment.author.profileImage.url}
                 alt={comment.author.name}
-                className="w-8 h-8 rounded-full object-cover"
+                className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
@@ -501,14 +536,14 @@ export default function Post() {
             <div className="bg-gray-50 rounded-xl p-3 relative group">
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {comment.author?.name || "Anonymous"}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-2">
+                  <div className="flex">
+                    <span className="text-lg font-semibold text-gray-900">
+                      {comment.author?.name || "Anonymous"}
+                    </span>
+                    {comment.author?._id && <VerifiedBadge userId={comment.author._id} />}
+                  </div>
+                  <span className="text-xs text-gray-500 ml-2 mt-1">
                     {new Date(comment.createdAt).toLocaleString([], {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -527,20 +562,9 @@ export default function Post() {
                 </button>
               </div>
 
-              <p className="text-sm text-gray-700 mt-1">{comment.text}</p>
+              <p className="text-md text-gray-700 mt-1">{comment.text}</p>
 
-              <div className="flex items-center mt-2 space-x-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setParentId(parentId === comment._id ? null : comment._id);
-                  }}
-                  className="text-xs flex items-center text-gray-500 hover:text-blue-600 transition-colors"
-                >
-                  <FaReply className="mr-1" size={12} />
-                  Reply
-                </button>
-              </div>
+
             </div>
 
             {parentId === comment._id && (
@@ -566,15 +590,7 @@ export default function Post() {
                   ) : (
                     <FaUserCircle className="text-gray-400 text-2xl flex-shrink-0" />
                   )}
-                  <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder={`Reply to ${comment.author?.name || "this comment"
-                      }...`}
-                    className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 bg-white"
-                    autoFocus
-                  />
+
                   <button
                     type="submit"
                     className="bg-blue-500 text-white px-3 py-2 rounded-full text-sm hover:bg-blue-600 transition-colors flex-shrink-0"
@@ -616,8 +632,6 @@ export default function Post() {
 
     return (
       <div className="relative" ref={dropdownRef}>
-        
-
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -737,8 +751,8 @@ export default function Post() {
                   handleVoiceSearch();
                 }}
                 className={`p-2.5 rounded-lg ${isListening
-                    ? "bg-red-100 text-red-500 shadow-sm"
-                    : "text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-gray-100"
+                  ? "bg-red-100 text-red-500 shadow-sm"
+                  : "text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-gray-100"
                   }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -809,22 +823,41 @@ export default function Post() {
                         className="flex items-center mb-3 cursor-pointer"
                         onClick={() => navigate(`/post/${post._id}`)}
                       >
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
-                          {post.author?.name?.charAt(0) || "U"}
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-base">
+                          {post.author?.profileImage.url ? (
+                            <img
+                              src={post.author.profileImage.url}
+                              alt={post.author.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-base">
+                              {post.author?.name?.charAt(0) || "U"}
+                            </div>
+                          )}
                         </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">
-                            {post.author?.name || "User"}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(post.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )}
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <p className="text-lg font-medium text-gray-900">
+                                {post.author?.name || "User"}
+                              </p>
+                              <VerifiedBadge author={post.author} />
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {new Date(post.createdAt).toLocaleString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(post.createdAt).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
                           </p>
                         </div>
                       </div>
@@ -849,43 +882,104 @@ export default function Post() {
                       >
                         {post.content}
                       </p>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          speakText(post.title, post.content);
-                        }}
-                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6"
-                      >
-                        <motion.div
-                          animate={{
-                            scale: [1, 1.1, 1],
-                            transition: { repeat: Infinity, duration: 2 },
-                          }}
-                        >
-                          <FaVolumeUp className="text-xl" />
-                        </motion.div>
-                        <span className="font-medium">Listen to this post</span>
-                      </motion.button>
 
                       {post.files?.urls?.length > 0 && (
                         <div className="mb-4">
                           {post.files.urls.slice(0, 2).map((file) => (
-                            <a
+                            <img
                               key={file._id}
-                              href={file.secure_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center text-indigo-600 hover:underline text-xs mr-3 mb-2"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <FaFilePdf className="mr-1" size={12} />
-                              {file.original_filename?.slice(0, 15) || "File"}
-                            </a>
+                              src={file.secure_url}
+                              alt={file.original_filename || "Post image"}
+                              className="max-w-70 h-auto rounded mb-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(file.secure_url, '_blank');
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            />
                           ))}
                         </div>
                       )}
+                      <motion.button
+                        whileHover={{
+                          scale: 1.03,
+                          backgroundColor: "rgba(99, 102, 241, 0.1)" // indigo-600 with 10% opacity
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          speakText(post.title, post.content);
+                        }}
+                        className={`
+    flex items-center gap-3 
+    px-4 py-3 rounded-xl
+    border border-indigo-200
+    bg-white/80 backdrop-blur-sm
+    shadow-sm hover:shadow-md
+    transition-all duration-200
+    text-indigo-600 hover:text-indigo-700
+    mb-6 w-full sm:w-auto
+  `}
+                      >
+                        <motion.div
+                          animate={{
+                            scale: [1, 1.1, 1],
+                            transition: {
+                              repeat: Infinity,
+                              duration: 2,
+                              ease: "easeInOut"
+                            },
+                          }}
+                          className="relative"
+                        >
+                          <FaVolumeUp className="text-xl" />
+                          {/* Optional sound waves animation */}
+                          <motion.span
+                            className="absolute -left-1 -top-1 w-7 h-7 border-2 border-indigo-400 rounded-full"
+                            animate={{
+                              scale: [1, 1.5, 1],
+                              opacity: [0.8, 0, 0.8],
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 2,
+                              delay: 0.3
+                            }}
+                          />
+                        </motion.div>
+
+                        <span className="font-medium text-sm sm:text-base">
+                          Listen to this post
+                        </span>
+
+                        {/* Optional play/pause indicator */}
+                        <motion.div
+                          className="ml-auto hidden sm:block"
+                          initial={{ opacity: 0 }}
+                          whileHover={{ opacity: 1 }}
+                        >
+                          <svg
+                            className="w-5 h-5 text-indigo-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                        </motion.div>
+                      </motion.button>
+
 
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <div className="flex items-center space-x-4">
@@ -896,8 +990,8 @@ export default function Post() {
                               handleLikePost(post._id);
                             }}
                             className={`flex cursor-pointer items-center gap-1 ${likeCounts[post._id]?.isLiked
-                                ? "text-blue-600"
-                                : "text-gray-400"
+                              ? "text-blue-600"
+                              : "text-gray-400"
                               } ${isLoadingLike
                                 ? "opacity-50 cursor-not-allowed"
                                 : ""
