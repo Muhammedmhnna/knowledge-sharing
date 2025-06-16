@@ -24,7 +24,7 @@ const ChatPopup = () => {
         const connectToAPI = async () => {
             setConnectionStatus('connecting');
             try {
-                const client = await Client.connect("yazied49/mo");
+                const client = await Client.connect("yazied49/FI");
                 setGradioClient(client);
                 setConnectionStatus('connected');
             } catch (err) {

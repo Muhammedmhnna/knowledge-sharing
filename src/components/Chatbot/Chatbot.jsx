@@ -33,7 +33,7 @@ const Chatbot = () => {
     const connectToAPI = async () => {
       try {
         console.log(`Attempting to connect to Gradio API (attempt ${retryCount + 1})`);
-        const client = await Client.connect("yazied49/mo");
+        const client = await Client.connect("yazied49/FI");
         setGradioClient(client);
         setConnectionStatus('connected');
         console.log("Connected successfully to Gradio API");
