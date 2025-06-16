@@ -40,23 +40,6 @@ const SavedPosts = () => {
     }
   };
 
-  const handleUnsave = async (postId) => {
-    try {
-      await axios.delete(
-        `https://knowledge-sharing-pied.vercel.app/interaction/unsave/${postId}`,
-        {
-          headers: {
-            token: user?.token,
-          },
-        }
-      );
-      toast.success("Post unsaved successfully");
-      setSavedPosts(savedPosts.filter(post => post._id !== postId));
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to unsave post");
-    }
-  };
-
   const handleViewPost = (postId) => {
     navigate(`/post/${postId}`);
   };

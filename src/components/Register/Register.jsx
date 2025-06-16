@@ -25,10 +25,13 @@ const Register = () => {
     name: Yup.string()
       .min(2, 'Name must be at least 2 characters')
       .max(25, 'Name must be less than 25 characters')
+      .matches(/[A-Za-z]/, 'Name must contain at least one letter') 
+      .matches(/^[A-Za-z0-9\s]+$/, 'Name can only contain letters, numbers, and spaces')
       .required('Name is required'),
 
     email: Yup.string()
       .email('Invalid email address')
+      .matches(/^[^\u0600-\u06FF]+$/, 'Email must not contain Arabic letters')
       .required('Email is required'),
 
     password: Yup.string()
@@ -125,7 +128,7 @@ const Register = () => {
         }, 2000);
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.message ||
+      const errorMsg = error.response?.data?.error ||
         error.message ||
         'Registration failed. Please try again.';
       setApiError(errorMsg);

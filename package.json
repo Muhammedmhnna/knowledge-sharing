@@ -13,6 +13,7 @@
     "@gradio/client": "^1.15.2",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.0.13",
+    "@tanstack/react-query": "^5.80.7",
     "axios": "^1.8.4",
     "canvas-confetti": "^1.9.3",
     "date-fns": "^4.1.0",
@@ -33,6 +34,7 @@
     "react-spinners": "^0.17.0",
     "react-toastify": "^11.0.5",
     "slick-carousel": "^1.8.1",
+    "sweetalert2": "^11.22.0",
     "tailwindcss": "^4.0.13",
     "yup": "^1.6.1"
   },

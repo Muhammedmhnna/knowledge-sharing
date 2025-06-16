@@ -4,14 +4,19 @@ import { ThreeDots } from "react-loader-spinner";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAdmin } from "../../Context/AdminContext.jsx";
-import { FiCheckCircle, FiClock, FiUser, FiMail, FiFileText } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiUser, FiMail, FiFileText, FiXCircle } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
+import Swal from 'sweetalert2';
+
 
 export default function AllNationalIds() {
   const [nationalIds, setNationalIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [loadingVerify, setLoadingVerify] = useState(null);
+  const [loadingStates, setLoadingStates] = useState({
+    verify: null,
+    reject: null
+  });
   const { admin } = useAdmin();
   const token = admin?.token;
 
@@ -40,8 +45,12 @@ export default function AllNationalIds() {
     fetchNationalIds();
   }, [token]);
 
+  // Make sure to import Swal at the top of your file:
+  // import Swal from 'sweetalert2';
+
   const handleVerify = async (userId, doctorName) => {
-    setLoadingVerify(userId);
+    setLoadingStates(prev => ({ ...prev, verify: userId }));
+
     try {
       const response = await axios.put(
         `https://knowledge-sharing-pied.vercel.app/admin/verifyDoctor/${userId}`,
@@ -49,23 +58,98 @@ export default function AllNationalIds() {
         { headers: { token } }
       );
 
-      // تحقق من الـ success أولاً
       if (response.data.success) {
-        // لو true: امسحه من القائمة
         setNationalIds((prev) => prev.filter((item) => item._id !== userId));
-        toast.success(response.data.message || `Dr. ${doctorName} Successfully approved ✅`);
+        // Success popup
+        await Swal.fire({
+          title: 'Verification Successful',
+          html: response.data.message || `Dr. <strong>${doctorName}</strong> has been verified successfully`,
+          icon: 'success',
+          confirmButtonColor: '#28a745',
+          timer: 3000,
+          showConfirmButton: false,
+          background: '#f8f9fa',
+          iconColor: '#28a745'
+        });
       } else {
-        // لو false: اظهر رسالة خطأ (مش هتحذفه)
-        toast.error(response.data.message || "Failed to approve,try again");
+        // Error popup
+        await Swal.fire({
+          title: 'Verification Failed',
+          text: response.data.message || "Verification failed, please try again",
+          icon: 'error',
+          confirmButtonColor: '#dc3545'
+        });
       }
     } catch (err) {
-      // لو حصل error في الـ request أصلاً
-      toast.error(err.response?.data?.message || "An error occurred while approving.");
+      // Error popup
+      await Swal.fire({
+        title: 'Error',
+        html: err.response?.data?.message || "An error occurred during verification",
+        icon: 'error',
+        confirmButtonColor: '#dc3545',
+        background: '#f8f9fa'
+      });
     } finally {
-      setLoadingVerify(null);
+      setLoadingStates(prev => ({ ...prev, verify: null }));
     }
   };
+  const handleReject = async (userId, doctorName) => {
+    // Styled confirm popup (replaces window.confirm)
+    const confirmResult = await Swal.fire({
+      title: 'Confirm Rejection',
+      html: `Are you sure you want to reject <strong>Dr. ${doctorName}</strong>'s application?<br><br>
+             <span style="color: #dc3545;">This action cannot be undone.</span>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Reject',
+      cancelButtonText: 'Cancel',
+      focusCancel: true,
+      backdrop: 'rgba(0,0,0,0.4)'
+    });
 
+    if (!confirmResult.isConfirmed) return;
+
+    setLoadingStates(prev => ({ ...prev, reject: userId }));
+
+    try {
+      const response = await axios.delete(
+        `https://knowledge-sharing-pied.vercel.app/admin/rejectDoctor/${userId}`,
+        { headers: { token } }
+      );
+
+      if (response.data.success) {
+        setNationalIds((prev) => prev.filter((item) => item._id !== userId));
+        // Styled success popup (replaces toast.success)
+        await Swal.fire({
+          title: 'Success',
+          html: response.data.message || `Dr. ${doctorName}'s application has been <strong>rejected</strong>`,
+          icon: 'success',
+          confirmButtonColor: '#28a745',
+          timer: 3000
+        });
+      } else {
+        // Styled error popup (replaces toast.error)
+        await Swal.fire({
+          title: 'Error',
+          html: response.data.message || 'Failed to reject application',
+          icon: 'error',
+          confirmButtonColor: '#dc3545'
+        });
+      }
+    } catch (err) {
+      // Styled error popup (replaces toast.error)
+      await Swal.fire({
+        title: 'Error',
+        html: err.response?.data?.message || 'An error occurred',
+        icon: 'error',
+        confirmButtonColor: '#dc3545'
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, reject: null }));
+    }
+  };
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -149,29 +233,55 @@ export default function AllNationalIds() {
                       </div>
 
                       {!item.isVerified && (
-                        <button
-                          onClick={() => handleVerify(item._id, item.name)}
-                          disabled={loadingVerify === item._id}
-                          className={`px-5 py-2 rounded-lg text-white font-medium flex items-center gap-2 ${loadingVerify === item._id
-                            ? "bg-indigo-400 cursor-not-allowed"
-                            : "bg-indigo-600 hover:bg-indigo-700"
-                            } transition-colors shadow-sm`}
-                        >
-                          {loadingVerify === item._id ? (
-                            <>
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Verifying...
-                            </>
-                          ) : (
-                            <>
-                              <FiCheckCircle className="text-lg" />
-                              Approve
-                            </>
-                          )}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleVerify(item._id, item.name)}
+                            disabled={loadingStates.verify === item._id || loadingStates.reject === item._id}
+                            className={`px-5 py-2 rounded-lg text-white font-medium flex items-center gap-2 ${loadingStates.verify === item._id
+                              ? "bg-indigo-400 cursor-not-allowed"
+                              : "bg-indigo-600 hover:bg-indigo-700"
+                              } transition-colors shadow-sm`}
+                          >
+                            {loadingStates.verify === item._id ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Verifying...
+                              </>
+                            ) : (
+                              <>
+                                <FiCheckCircle className="text-lg" />
+                                Approve
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => handleReject(item._id, item.name)}
+                            disabled={loadingStates.reject === item._id || loadingStates.verify === item._id}
+                            className={`px-5 py-2 rounded-lg text-white font-medium flex items-center gap-2 ${loadingStates.reject === item._id
+                              ? "bg-red-400 cursor-not-allowed"
+                              : "bg-red-600 hover:bg-red-700"
+                              } transition-colors shadow-sm`}
+                          >
+                            {loadingStates.reject === item._id ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Rejecting...
+                              </>
+                            ) : (
+                              <>
+                                <FiXCircle className="text-lg" />
+                                Reject
+                              </>
+                            )}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

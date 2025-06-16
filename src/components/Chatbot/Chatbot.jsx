@@ -33,7 +33,7 @@ const Chatbot = () => {
     const connectToAPI = async () => {
       try {
         console.log(`Attempting to connect to Gradio API (attempt ${retryCount + 1})`);
-        const client = await Client.connect("yazied49/nad");
+        const client = await Client.connect("yazied49/mo");
         setGradioClient(client);
         setConnectionStatus('connected');
         console.log("Connected successfully to Gradio API");
@@ -120,13 +120,13 @@ const Chatbot = () => {
     }
 
     try {
-      // Get AI response with timeout
+      // Get AI response with timeout - UPDATED FOR NEW ENDPOINT
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       const result = await Promise.race([
         gradioClient.predict("/predict", {
-          user_input: inputValue
+          user_question: inputValue  // Changed from user_input to user_question
         }),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Request timeout')), 15000)
@@ -154,7 +154,6 @@ const Chatbot = () => {
       setIsTyping(false);
     }
   };
-
   // Handle keyboard events
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -207,7 +206,7 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800">
+    <div className="flex flex-col h-100 w-full bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800">
       {/* Header */}
       <motion.div
         className="p-4 shadow-md bg-gradient-to-r from-blue-600 to-purple-600"
@@ -238,7 +237,7 @@ const Chatbot = () => {
               </motion.div>
               <motion.span
                 className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400' :
-                    connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
+                  connectionStatus === 'connecting' ? 'bg-yellow-400' : 'bg-red-400'
                   }`}
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -336,16 +335,16 @@ const Chatbot = () => {
 
               <motion.div
                 className={`max-w-[80%] lg:max-w-[70%] rounded-2xl px-4 py-3 ${message.sender === 'user'
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none'
-                    : message.sender === 'system'
-                      ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg'
-                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-sm'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none'
+                  : message.sender === 'system'
+                    ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg'
+                    : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none shadow-sm'
                   }`}
                 whileHover={{ scale: 1.02 }}
               >
                 <p className="whitespace-pre-wrap break-words">{message.text}</p>
                 <p className={`text-xs mt-1 text-right ${message.sender === 'user' ? 'text-blue-100' :
-                    message.sender === 'system' ? 'text-yellow-600' : 'text-gray-500'
+                  message.sender === 'system' ? 'text-yellow-600' : 'text-gray-500'
                   }`}>
                   {message.timestamp}
                 </p>
@@ -442,8 +441,8 @@ const Chatbot = () => {
               onClick={handleSendMessage}
               disabled={isLoading || !inputValue.trim() || connectionStatus !== 'connected'}
               className={`absolute right-2 bottom-2 p-2 rounded-full ${isLoading || !inputValue.trim() || connectionStatus !== 'connected'
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-100 cursor-pointer'
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-blue-600 hover:text-blue-800 hover:bg-blue-100 cursor-pointer'
                 }`}
               whileHover={(!isLoading && inputValue.trim() && connectionStatus === 'connected') ? { scale: 1.1 } : {}}
               whileTap={(!isLoading && inputValue.trim() && connectionStatus === 'connected') ? { scale: 0.9 } : {}}

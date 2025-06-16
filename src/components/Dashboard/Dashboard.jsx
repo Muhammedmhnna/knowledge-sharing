@@ -11,6 +11,8 @@ import { useAdmin } from "../../Context/AdminContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import Swal from 'sweetalert2';
+
 
 export default function Dashboard() {
   const { admin, clearAdmin } = useAdmin();
@@ -49,7 +51,7 @@ export default function Dashboard() {
   const buttonClass = (tabName) =>
     `flex items-center gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 ${activeTab === tabName
       ? "bg-white text-indigo-600 shadow-md font-medium"
-      : "text-gray-100 hover:text-white"
+      : "text-gray-100 hover:text-black"
     }`;
 
   const handleAddAdmin = async () => {
@@ -59,25 +61,66 @@ export default function Dashboard() {
     if (error) return;
 
     try {
+      // Show loading state
+      const loadingSwal = Swal.fire({
+        title: 'Creating Administrator',
+        html: 'Please wait while we process your request...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       const response = await axios.post(
         "https://knowledge-sharing-pied.vercel.app/admin/createAdmin",
         { email, name },
         { headers: { token: token } }
       );
 
-      setShowSuccess(true); // Show success message
+      // Close loading state
+      await loadingSwal.close();
 
-      // Delay for 2 seconds before closing
-      setTimeout(() => {
-        setShowSuccess(false);
-        setShowModal(false);
-        handleClearAdminForm();
-        setEmailError("");
-        setEmailTouched(false);
-      }, 2000);
+      // Show success animation
+      await Swal.fire({
+        title: 'Success!',
+        html: `<div style="display: flex; flex-direction: column; align-items: center;">
+                  <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" width="52" height="52">
+                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" stroke="#4CAF50" stroke-width="2"/>
+                    <path class="checkmark__check" fill="none" stroke="#4CAF50" stroke-width="4" stroke-linecap="round" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                  </svg>
+                  <h3 style="margin-top: 20px; color: #4CAF50;">Administrator Added Successfully!</h3>
+                  <p style="text-align: center;">${name} (${email}) has been granted admin privileges.</p>
+                </div>`,
+        showConfirmButton: false,
+        timer: 2000,
+        background: '#f8f9fa',
+        willClose: () => {
+          setShowModal(false);
+          handleClearAdminForm();
+          setEmailError("");
+          setEmailTouched(false);
+        }
+      });
 
     } catch (error) {
       const errorMsg = error.response?.data?.error || "Failed to create administrator. Please check data.";
+
+      // Show attractive error message
+      await Swal.fire({
+        title: 'Error!',
+        html: `<div style="display: flex; flex-direction: column; align-items: center;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <h3 style="margin-top: 20px; color: #dc3545;">Operation Failed</h3>
+                  <p style="text-align: center;">${errorMsg}</p>
+                </div>`,
+        confirmButtonColor: '#dc3545',
+        background: '#f8f9fa'
+      });
+
       setEmailError(errorMsg);
     }
   };

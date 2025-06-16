@@ -1,55 +1,50 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
-// Create the context
 const UserContext = createContext();
 
-// Context provider component
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined); // undefined يعني لم يتم التحقق بعد
 
-  // Load user data from localStorage on initial render
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
-        const storedUser = localStorage.getItem("userData"); // ✅ use consistent key
-        if (!storedUser) return;
+        const storedUser = localStorage.getItem("userData");
+        if (!storedUser) {
+          setUser(null); // لا يوجد مستخدم مسجل
+          return;
+        }
 
         const parsedUser = JSON.parse(storedUser);
 
-        // Validate token format
         if (parsedUser.token?.startsWith("noteApp__")) {
           setUser(parsedUser);
         } else {
           localStorage.removeItem("userData");
+          setUser(null);
         }
       } catch (error) {
-        console.error("Invalid user data in localStorage:", error);
+        console.error("Invalid user data:", error);
         localStorage.removeItem("userData");
+        setUser(null);
       }
     };
 
     loadUserFromStorage();
   }, []);
 
-  // Update user state and store in localStorage
   const updateUser = (userData) => {
     const token = userData.token.startsWith("noteApp__")
       ? userData.token
       : `noteApp__${userData.token}`;
 
-    const updatedData = {
-      ...userData, // ← should contain _id and other info
-      token,
-    };
-
+    const updatedData = { ...userData, token };
     setUser(updatedData);
-    localStorage.setItem("userData", JSON.stringify(updatedData)); // ✅ same key
+    localStorage.setItem("userData", JSON.stringify(updatedData));
   };
 
-  // Clear user state and localStorage
   const clearUser = () => {
     setUser(null);
-    localStorage.removeItem("userData"); // ✅ same key
+    localStorage.removeItem("userData");
   };
 
   return (
@@ -59,5 +54,4 @@ export const UserProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use user context
 export const useUser = () => useContext(UserContext);

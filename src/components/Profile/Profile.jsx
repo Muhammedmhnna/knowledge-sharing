@@ -209,6 +209,40 @@ const Profile = () => {
     fetchUserProfile();
   }, [navigate, contextUser]);
 
+  const fetchSavedPosts = async () => {
+    setLoadingSavedPosts(true);
+    setError(null);
+    try {
+      const response = await axios.get(
+        "https://knowledge-sharing-pied.vercel.app/interaction/saved_posts",
+        {
+          headers: {
+            token: user?.token,
+          },
+        }
+      );
+
+      // Filter out null values and invalid posts
+      const validPosts = response.data.filter(
+        post => post && post._id && (post.title || post.content)
+      );
+      setSavedPosts(validPosts);
+    } catch (error) {
+      const errMsg =
+        error.response?.data?.message || "Failed to load saved posts.";
+    
+      toast.error(errMsg);
+    } finally {
+      setLoadingSavedPosts(false);
+    }
+  };
+  useEffect(() => {
+    if (user?.token && activeTab === 'savedPosts') {
+      fetchSavedPosts();
+    }
+  }, [user, activeTab]);
+
+
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -289,7 +323,7 @@ const Profile = () => {
   };
 
   const handleChangePassword = () => {
-    navigate("/reset-password");
+    navigate("/changePassword");
   };
   const handlePrivacySettings = () => {
     navigate("/privacy");
@@ -349,31 +383,6 @@ const Profile = () => {
     }
   };
 
-  const fetchSavedPosts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get(
-        "https://knowledge-sharing-pied.vercel.app/interaction/saved_posts",
-        {
-          headers: {
-            token: user?.token,
-          },
-        }
-      );
-      const validPosts = response.data.filter(
-        post => post && post._id && (post.title || post.content)
-      );
-      setSavedPosts(validPosts);
-    } catch (error) {
-      const errMsg =
-        error.response?.data?.message || "Failed to load saved posts.";
-      setError(errMsg);
-      toast.error(errMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleUnsave = async (postId) => {
     try {
@@ -396,11 +405,7 @@ const Profile = () => {
     navigate(`/post/${postId}`);
   };
 
-  useEffect(() => {
-    if (user?.token) {
-      fetchSavedPosts();
-    }
-  }, [user]);
+
 
 
   if (loading) {
@@ -1055,7 +1060,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Posts Section */}
+
           {/* Posts Section */}
           <div className="p-8 border-t border-indigo-100">
             <div className="border-b border-indigo-200 mb-6">
@@ -1147,6 +1152,7 @@ const Profile = () => {
                           setPostToDelete(post._id);
                           setShowDeletePostModal(true);
                         }}
+                        onView={() => navigate(`/post/${post._id}`)}
                       />
                     ))}
                   </div>
@@ -1189,13 +1195,7 @@ const Profile = () => {
                                     {post.content || "No content available"}
                                   </p>
                                 </div>
-                                <button
-                                  onClick={() => handleUnsave(post._id)}
-                                  className="text-gray-400 hover:text-red-500 transition-colors p-2"
-                                  aria-label="Unsave post"
-                                >
-                                  <FiTrash2 />
-                                </button>
+                               
                               </div>
                               <div className="mt-4 flex justify-between items-center">
                                 <span className="text-sm text-gray-500">

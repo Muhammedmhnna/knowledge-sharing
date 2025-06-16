@@ -12,6 +12,7 @@ import { useUser } from '../../Context/UserContext.jsx';
 const ForgetPassword = () => {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [forgetCode, setForgetCode] = useState('');
@@ -39,6 +40,7 @@ const ForgetPassword = () => {
     validationSchema,
     onSubmit: async ({ email }) => {
       try {
+        setApiError("");
         setLoading(true);
         const { data } = await axios.post(
           'https://knowledge-sharing-pied.vercel.app/user/forgetPassword',
@@ -54,7 +56,9 @@ const ForgetPassword = () => {
           toast.success('Verification code sent to your email!');
         }
       } catch (error) {
-        toast.error(error.response?.data?.error || 'Failed to send code');
+        console.log(error);
+        setApiError(error.response?.data?.error);
+
       } finally {
         setLoading(false);
       }
@@ -193,7 +197,7 @@ const ForgetPassword = () => {
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="text"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.email}
@@ -207,6 +211,20 @@ const ForgetPassword = () => {
                   <p className="mt-1 text-sm text-red-600">{formik.errors.email}</p>
                 )}
               </div>
+              {apiError && (
+                <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm">
+                  <svg
+                    className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{apiError}</span>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -225,6 +243,10 @@ const ForgetPassword = () => {
                   'Send Reset Code'
                 )}
               </button>
+
+              {/* Error message display */}
+
+
             </form>
           </div>
         </motion.div>

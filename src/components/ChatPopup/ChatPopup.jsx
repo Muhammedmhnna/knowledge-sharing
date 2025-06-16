@@ -24,7 +24,7 @@ const ChatPopup = () => {
         const connectToAPI = async () => {
             setConnectionStatus('connecting');
             try {
-                const client = await Client.connect("yazied49/nad");
+                const client = await Client.connect("yazied49/mo");
                 setGradioClient(client);
                 setConnectionStatus('connected');
             } catch (err) {
@@ -65,32 +65,41 @@ const ChatPopup = () => {
     const handleSendMessage = async () => {
         if (!inputValue.trim() || isLoading) return;
 
-        // Add user message
-        addMessage({
+        // Add user message immediately
+        const userMessage = {
             text: inputValue,
             sender: 'user'
-        });
-
+        };
+        addMessage(userMessage);
         setInputValue('');
         setIsLoading(true);
         setIsTyping(true);
 
+        // Check connection status
         if (!gradioClient || connectionStatus !== 'connected') {
-            addSystemMessage("Still connecting to the AI service...");
+            addSystemMessage("Still connecting to the AI service... please wait");
             setIsLoading(false);
             setIsTyping(false);
             return;
         }
 
         try {
-            // Get AI response with timeout
+            // Get AI response with timeout - UPDATED FOR NEW ENDPOINT
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
             const result = await Promise.race([
-                gradioClient.predict("/predict", { user_input: inputValue }),
+                gradioClient.predict("/predict", {
+                    user_question: inputValue  // Changed from user_input to user_question
+                }),
                 new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timeout')), 15000))
+                    setTimeout(() => reject(new Error('Request timeout')), 15000)
+                )
             ]);
 
-            // Simulate typing delay
+            clearTimeout(timeoutId);
+
+            // Simulate typing delay for better UX
             await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
 
             addMessage({
@@ -289,7 +298,7 @@ const ChatPopup = () => {
                                                 ? 'bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg'
                                                 : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
                                             }`}
-                                       
+
                                     >
                                         <p className="whitespace-pre-wrap">{message.text}</p>
                                         <p className={`text-xs mt-1 text-right ${message.sender === 'user' ? 'text-blue-200' :

@@ -35,6 +35,8 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute/AdminProtected
 import PrivacySettings from "./components/PrivacySettings/PrivacySettings.jsx";
 import ContinueAsGuest from "./components/ContinueAsGuest/ContinueAsGuest.jsx";
 import TeamPage from "./components/TeamPage/TeamPage.jsx";
+import ChangePassword from "./components/changePassword/changePassword.jsx";
+import ProfilePage from "./components/ProfilePage/ProfilePage.jsx";
 const router = createBrowserRouter([
   {
     path: "",
@@ -113,9 +115,25 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "changePassword",
+        element: (
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "profile/:id",
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "teamPage",
         element: (
-            <TeamPage />       
+          <TeamPage />
         ),
       },
       {

@@ -2,24 +2,20 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
-  FaStar,
   FaBookmark,
   FaEdit,
-  FaFilePdf,
   FaRegCommentDots,
-  FaSearch,
-  FaMicrophoneSlash,
-  FaMicrophone,
-  FaTimes,
   FaVolumeUp,
   FaUserCircle,
-  FaReply,
   FaTrash,
   FaEllipsisV,
   FaPlus,
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaTimes,
+
 } from "react-icons/fa";
 import { BiSolidLike } from "react-icons/bi";
-import { ThreeDots } from "react-loader-spinner";
 import { MdDelete } from "react-icons/md";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -29,226 +25,101 @@ import { useUser } from "../../Context/UserContext";
 export default function SpecPost() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useUser();
+  const token = user?.token;
+
+  // State management
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLoadingLike, setIsLoadingLike] = useState(false);
   const [isLoadingSave, setIsLoadingSave] = useState(false);
+  const [tempSaved, setTempSaved] = useState({});
   const [likeCounts, setLikeCounts] = useState({});
   const [saveCounts, setSaveCounts] = useState({});
   const [comments, setComments] = useState({});
+  const [commentCounts, setCommentCounts] = useState({});
+  const [showComments, setShowComments] = useState({});
+  const [loadingComments, setLoadingComments] = useState({});
   const [text, setText] = useState("");
   const [parentId, setParentId] = useState(null);
-  const [showComments, setShowComments] = useState({});
-  const recognitionRef = useRef(null);
-  const [isListening, setIsListening] = useState(false);
-  const { user } = useUser();
-  const token = user?.token;
 
-  // Load interactions from localStorage
+
+
+  // Fetch specific post
   useEffect(() => {
-    const storedLikes = JSON.parse(localStorage.getItem("likes")) || {};
-    const storedSaves = JSON.parse(localStorage.getItem("saves")) || {};
-
-    const storedShowComments =
-      JSON.parse(localStorage.getItem("showComments")) || {};
-
-    const storedComments = JSON.parse(localStorage.getItem("comments")) || {};
-
-    setLikeCounts(storedLikes);
-    setSaveCounts(storedSaves);
-
-    setShowComments(storedShowComments);
-
-    setComments(storedComments);
-
-    // Load saved posts from server if user is logged in
-    const loadSavedPosts = async () => {
+    const fetchPost = async () => {
       try {
-        if (token) {
-          const response = await axios.get(
-            "https://knowledge-sharing-pied.vercel.app/interaction/saved_posts",
-            {
-              headers: {
-                token: token,
-              },
-            }
-          );
+        setIsLoading(true);
+        const { data } = await axios.get(
+          `https://knowledge-sharing-pied.vercel.app/post/list_specific/${id}`
+        );
 
-          const savedPosts = response.data.savedPosts || [];
-          const savedState = {};
-          savedPosts.forEach((post) => {
-            savedState[post._id] = true;
-          });
+        const processedPost = {
+          ...data.post,
+          title: data.post.title || "Untitled Post",
+          content: data.post.content || "",
+          files: data.post.files || { urls: [] },
+          sub_category: data.post.sub_category || null,
+          isFlagged: data.post.isFlagged || false,
+          comments: data.post.comments || []
+        };
 
-          setSaveCounts((prev) => ({ ...prev, ...savedState }));
-          localStorage.setItem(
-            "saves",
-            JSON.stringify({ ...storedSaves, ...savedState })
-          );
+        setPost(processedPost);
+
+        // Initialize comment count
+        setCommentCounts(prev => ({
+          ...prev,
+          [processedPost._id]: processedPost.comments?.length || 0
+        }));
+
+        // Get likes count
+        const likesResponse = await axios.get(
+          `https://knowledge-sharing-pied.vercel.app/interaction/${processedPost._id}/likes_count`
+        );
+
+        setLikeCounts(prev => ({
+          ...prev,
+          [processedPost._id]: {
+            count: likesResponse.data.likes_count || 0,
+            isLiked: prev[processedPost._id]?.isLiked || false
+          }
+        }));
+
+        // Get saved status if user is logged in
+        if (user?.token) {
+          try {
+            const savedResponse = await axios.get(
+              "https://knowledge-sharing-pied.vercel.app/interaction/saved_posts",
+              { headers: { token: user.token } }
+            );
+
+            const savedPosts = savedResponse.data.savedPosts || [];
+            const isSaved = savedPosts.some(sp => sp._id === processedPost._id);
+
+            setSaveCounts(prev => ({
+              ...prev,
+              [processedPost._id]: isSaved
+            }));
+          } catch (error) {
+            console.error("Error loading saved posts:", error);
+          }
         }
+
+        setIsLoading(false);
       } catch (error) {
-        console.error("Error loading saved posts:", error);
+        console.error("Error fetching post:", error);
+        setError("Failed to load the post. Please try again later.");
+        setIsLoading(false);
       }
     };
 
-    loadSavedPosts();
-  }, [token]);
-
-  // Save showComments state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem("showComments", JSON.stringify(showComments));
-    localStorage.setItem("comments", JSON.stringify(comments));
-  }, [showComments, comments]);
-
-  // Fetch specific post
-  const fetchPost = async () => {
-    try {
-      const { data } = await axios.get(
-        `https://knowledge-sharing-pied.vercel.app/post/list_specific/${id}`
-      );
-      setPost(data.post);
-
-      // Fetch comments if they were shown before refresh
-      const savedShowComments =
-        JSON.parse(localStorage.getItem("showComments")) || {};
-      if (savedShowComments[data.post._id]) {
-        await fetchComments(data.post._id);
-      }
-
-      getLikesCount(data.post._id);
-    } catch (error) {
-      console.error("Error fetching post:", error);
-      setError("Failed to load the post. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
     fetchPost();
-  }, [id]);
+  }, [id, user?.token]);
 
-  // Fetch comments when post changes
-  useEffect(() => {
-    if (post?._id) {
-      const savedShowComments =
-        JSON.parse(localStorage.getItem("showComments")) || {};
-      if (savedShowComments[post._id]) {
-        fetchComments(post._id);
-      }
-    }
-  }, [post?._id]);
-
-  // Handle delete post
-  const handleDeletePost = async (postId) => {
-    try {
-      await axios.delete(
-        `https://knowledge-sharing-pied.vercel.app/post/delete/${postId}`,
-        {
-          headers: {
-            token: token,
-          },
-        }
-      );
-      toast.success("Post deleted successfully!");
-      navigate("/posts");
-    } catch (error) {
-      toast.error("Failed to delete post. Try again.");
-      console.error("Delete post error:", error);
-    }
-  };
-
-  // Handle like post
-  const handleLikePost = async (postId) => {
-    if (!user) {
-      toast.error("Please login to like posts");
-      navigate("/login");
-      return;
-    }
-
-    setIsLoadingLike(true);
-
-    try {
-      const response = await axios.post(
-        `https://knowledge-sharing-pied.vercel.app/interaction/${postId}/like`,
-        {},
-
-        { headers: { token: token } }
-      );
-
-      setLikeCounts((prev) => ({
-        ...prev,
-        [postId]: {
-          count: response.data.likes_count,
-          isLiked: !prev[postId]?.isLiked,
-        },
-      }));
-
-      localStorage.setItem(
-        "likes",
-        JSON.stringify({
-          ...likeCounts,
-          [postId]: {
-            count: response.data.likes_count,
-            isLiked: !likeCounts[postId]?.isLiked,
-          },
-        })
-      );
-
-      toast.success(response.data.message || "Post liked!");
-    } catch (error) {
-      console.error("Like post error:", error);
-      toast.error(error.response?.data?.message || "Failed to like post.");
-    } finally {
-      setIsLoadingLike(false);
-    }
-  };
-
-  // Handle save post
-  const handleSavePost = async (postId) => {
-    if (!user) {
-      toast.error("Please login to save posts");
-      navigate("/login");
-      return;
-    }
-
-    setIsLoadingSave(true);
-    try {
-      const response = await axios.post(
-        `https://knowledge-sharing-pied.vercel.app/interaction/${postId}/save`,
-        {},
-        {
-          headers: {
-            token: token,
-          },
-        }
-      );
-
-      setSaveCounts((prev) => {
-        const newState = {
-          ...prev,
-          [postId]: !prev[postId],
-        };
-        localStorage.setItem("saves", JSON.stringify(newState));
-        return newState;
-      });
-
-      toast.success(
-        saveCounts[postId]
-          ? "Post removed from saved!"
-          : "Post saved successfully!"
-      );
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to save post.");
-    } finally {
-      setIsLoadingSave(false);
-    }
-  };
-  // Add this component near your imports
+  // Verified Badge Component
   const VerifiedBadge = ({ author }) => {
-    // Check if the author has a doctor role
-    const isDoctor = author?.role === 'doctor';
+    const isDoctor = author?.role === "doctor";
 
     if (!isDoctor) return null;
 
@@ -275,98 +146,217 @@ export default function SpecPost() {
     );
   };
 
-  // Get likes count for a post
-  const getLikesCount = async (postId) => {
+  // Handle like post
+  const handleLikePost = async (postId) => {
+    if (!user) {
+      toast.error("Please login to like posts");
+      navigate("/login");
+      return;
+    }
+    if (isLoadingLike) return;
+    setIsLoadingLike(true);
+
+    const wasLiked = likeCounts[postId]?.isLiked || false;
+    const currentCount = likeCounts[postId]?.count || 0;
+
+    setLikeCounts((prev) => ({
+      ...prev,
+      [postId]: {
+        count: wasLiked ? currentCount - 1 : currentCount + 1,
+        isLiked: !wasLiked,
+      },
+    }));
+
     try {
-      const response = await axios.get(
+      await axios.post(
+        `https://knowledge-sharing-pied.vercel.app/interaction/${postId}/like`,
+        {},
+        { headers: { token: token } }
+      );
+
+      if (wasLiked) {
+        toast.info(
+          <div className="flex items-center">
+            <BiSolidLike className="text-blue-500 mr-2" />
+            <span>You unliked the post</span>
+          </div>,
+          {
+            icon: false,
+            className: "border-l-4 border-blue-500",
+          }
+        );
+      } else {
+        toast.success(
+          <div className="flex items-center">
+            <BiSolidLike className="text-blue-500 mr-2" />
+            <span>You liked the post</span>
+          </div>,
+          {
+            icon: false,
+            className: "border-l-4 border-blue-500",
+          }
+        );
+      }
+
+      // Get updated count from server
+      const countResponse = await axios.get(
         `https://knowledge-sharing-pied.vercel.app/interaction/${postId}/likes_count`
       );
 
-      setLikeCounts((prevCounts) => ({
-        ...prevCounts,
+      setLikeCounts((prev) => ({
+        ...prev,
         [postId]: {
-          count: response.data.likes_count,
-          isLiked: prevCounts[postId]?.isLiked || false,
+          count: countResponse.data.likes_count || 0,
+          isLiked: !wasLiked,
         },
       }));
     } catch (error) {
-      console.error("Error fetching like count:", error);
-      setLikeCounts((prevCounts) => ({
-        ...prevCounts,
+      console.error("Like post error:", error);
+      // Revert changes on error
+      setLikeCounts((prev) => ({
+        ...prev,
         [postId]: {
-          count: 0,
-          isLiked: prevCounts[postId]?.isLiked || false,
+          count: currentCount,
+          isLiked: wasLiked,
         },
       }));
+      toast.error(error.response?.data?.message || "Failed to like post.");
+    } finally {
+      setIsLoadingLike(false);
     }
   };
 
-  // Text-to-speech function
-  const speakText = (title, content) => {
-    if ("speechSynthesis" in window) {
-      const text = `${title}. ${content}`;
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.pitch = 1;
-      utterance.rate = 1;
-      window.speechSynthesis.speak(utterance);
-    } else {
-      toast.warning("Text-to-speech not supported in your browser");
+  // Handle save post
+  const handleSavePost = async (postId, e) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please login to save posts");
+      navigate("/login");
+      return;
     }
-  };
 
-  // Fetch comments for a post
-
-  const fetchComments = async (postId) => {
+    setIsLoadingSave(true);
     try {
-      const res = await axios.get(
-        `https://knowledge-sharing-pied.vercel.app/comment/${postId}/get`
+      const response = await axios.post(
+        `https://knowledge-sharing-pied.vercel.app/interaction/${postId}/save`,
+        {},
+        { headers: { token: token } }
       );
 
-      const fetchedComments = res.data || [];
+      const isSaved = response.data.Data.isSaved;
 
-      setComments((prev) => {
-        const newComments = {
+      setSaveCounts((prev) => ({
+        ...prev,
+        [postId]: isSaved,
+      }));
+
+      if (isSaved) {
+        setTempSaved((prev) => ({
           ...prev,
-
-          [postId]: fetchedComments,
-        };
-        localStorage.setItem("comments", JSON.stringify(newComments));
-        return newComments;
-      });
-
-      if (post && post._id === postId) {
-        setPost((prev) => ({
-          ...prev,
-          comments_count: fetchedComments.length,
+          [postId]: true,
         }));
+
+        setTimeout(() => {
+          setTempSaved((prev) => ({
+            ...prev,
+            [postId]: false,
+          }));
+        }, 3000);
+
+        toast.success(
+          <div className="flex items-center">
+            <FaBookmark className="text-green-500 mr-2" />
+            <span>Post saved successfully!</span>
+          </div>,
+          {
+            icon: false,
+            className: "border-l-4 border-green-500",
+          }
+        );
+      } else {
+        toast.info(
+          <div className="flex items-center">
+            <FaBookmark className="text-blue-500 mr-2" />
+            <span>Post removed from saved</span>
+          </div>,
+          {
+            icon: false,
+            className: "border-l-4 border-blue-500",
+          }
+        );
       }
     } catch (error) {
-      console.error("Error fetching comments:", error);
-      toast.error("Failed to load comments");
+      console.error("Error saving post:", error);
+      toast.error(error.response?.data?.message || "Failed to save post");
+    } finally {
+      setIsLoadingSave(false);
     }
   };
 
-  // Toggle comments visibility
+  // Handle delete post
+  const handleDeletePost = async (postId) => {
+    try {
+      const postToDelete = post?._id === postId ? post : null;
 
+      if (!postToDelete) {
+        toast.error("Post not found");
+        return;
+      }
+
+      if (postToDelete.author._id !== user?._id) {
+        toast.error("You can only delete your own posts");
+        return;
+      }
+
+      await axios.delete(
+        `https://knowledge-sharing-pied.vercel.app/post/delete/${postId}`,
+        { headers: { token: token } }
+      );
+      toast.success("Post deleted successfully!");
+      navigate("/post");
+    } catch (error) {
+      toast.error("Failed to delete post. Try again.");
+      console.error("Delete post error:", error);
+    }
+  };
+
+  // Comments functions
   const toggleComments = async (postId) => {
-    const shouldShow = !showComments[postId];
     setShowComments((prev) => ({
       ...prev,
-      [postId]: shouldShow,
+      [postId]: !prev[postId],
     }));
 
-    if (shouldShow) {
+    // If comments are already in the post data, use them
+    if (post?.comments?.length > 0 && !comments[postId]) {
+      setComments((prev) => ({
+        ...prev,
+        [postId]: post.comments,
+      }));
+      return;
+    }
+
+    if (!showComments[postId] && !comments[postId]) {
       try {
-        await fetchComments(postId);
+        setLoadingComments((prev) => ({ ...prev, [postId]: true }));
+        const res = await axios.get(
+          `https://knowledge-sharing-pied.vercel.app/comment/${postId}/get`
+        );
+        setComments((prev) => ({
+          ...prev,
+          [postId]: res.data.comments || [],
+        }));
       } catch (error) {
         console.error("Error fetching comments:", error);
+        toast.error("Failed to load comments");
+      } finally {
+        setLoadingComments((prev) => ({ ...prev, [postId]: false }));
       }
     }
   };
 
-  // Handle add comment
 
+  // Add Comment
   const handleAddComment = async (e, postId) => {
     e.preventDefault();
     if (!text.trim()) return;
@@ -379,32 +369,22 @@ export default function SpecPost() {
     try {
       const { data } = await axios.post(
         `https://knowledge-sharing-pied.vercel.app/comment/${postId}/add`,
-        {
-          text,
-          parent_comment: parentId || null,
-        },
-        {
-          headers: {
-            token: token,
-          },
-        }
+        { text, parent_comment: parentId || null },
+        { headers: { token: token } }
       );
 
       setText("");
       setParentId(null);
 
-      setComments((prev) => {
-        const newComments = {
-          ...prev,
-          [postId]: [data.comment, ...(prev[postId] || [])],
-        };
-        localStorage.setItem("comments", JSON.stringify(newComments));
-        return newComments;
-      });
-
-      setPost((prev) => ({
+      // Update comment count immediately
+      setCommentCounts(prev => ({
         ...prev,
-        comments_count: (prev.comments_count || 0) + 1,
+        [postId]: (prev[postId] || 0) + 1
+      }));
+
+      setComments(prev => ({
+        ...prev,
+        [postId]: [data.comment, ...(prev[postId] || [])],
       }));
 
       toast.success("Comment added successfully!");
@@ -413,31 +393,26 @@ export default function SpecPost() {
       toast.error("Failed to add comment");
     }
   };
+
   // Handle delete comment
   const handleDeleteComment = async (commentId, postId) => {
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     try {
       await axios.delete(
         `https://knowledge-sharing-pied.vercel.app/comment/${commentId}/delete`,
-        {
-          headers: {
-            token: token,
-          },
-        }
+        { headers: { token: token } }
       );
+      // Update comment count
+      setCommentCounts(prev => ({
+        ...prev,
+        [postId]: Math.max((prev[postId] || 0) - 1, 0)
+      }));
 
-      // Update comments state
-      setComments((prev) => {
-        const updatedComments = {
-          ...prev,
-          [postId]: prev[postId].filter((comment) => comment._id !== commentId),
-        };
-        localStorage.setItem("comments", JSON.stringify(updatedComments));
-        return updatedComments;
-      });
+      setComments((prev) => ({
+        ...prev,
+        [postId]: prev[postId].filter((comment) => comment._id !== commentId),
+      }));
 
       toast.success("Comment deleted successfully!");
     } catch (error) {
@@ -446,15 +421,19 @@ export default function SpecPost() {
     }
   };
 
-  // Render comments with nested replies
 
+  // Render comments with nested replies
   const renderComments = (commentsArray, postId, parent = null, depth = 0) => {
-    if (!commentsArray || !Array.isArray(commentsArray)) {
+    if (loadingComments[postId]) {
       return (
         <div className="text-center py-4 text-gray-500 text-sm">
           Loading comments...
         </div>
       );
+    }
+
+    if (!commentsArray || !Array.isArray(commentsArray)) {
+      return null;
     }
 
     const filteredComments = commentsArray.filter(
@@ -469,170 +448,114 @@ export default function SpecPost() {
       );
     }
 
-    return filteredComments.map((comment) => (
-      <motion.div
-        key={comment._id}
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`mt-3 ${depth > 0
-          ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
-          : ""
-          }`}
-      >
-        <div className="flex gap-3 items-start">
-          <div className="flex-shrink-0">
-            {comment.author?.profileImage?.url ? (
-              <img
-                src={comment.author.profileImage.url}
-                alt={comment.author.name}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-sm">
-                {comment.author?.name?.charAt(0) || "U"}
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="bg-gray-50 rounded-xl p-3 relative group">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex">
-                    <span className="text-lg font-semibold text-gray-900">
-                      {comment.author?.name || "Anonymous"}
+    return filteredComments.map((comment) => {
+      const author = comment.author || {};
+
+      return (
+        <motion.div
+          key={comment._id}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className={`mt-3 ${depth > 0
+            ? "ml-6 pl-4 relative before:absolute before:left-0 before:top-0 before:h-full before:w-0.5 before:bg-gray-200"
+            : ""
+            }`}
+        >
+          <div className="flex gap-3 items-start">
+            <div className="flex-shrink-0">
+              {author.profileImage?.url ? (
+                <img
+                  src={author.profileImage.url}
+                  alt={author.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://via.placeholder.com/40";
+                  }}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
+                  {author.name?.charAt(0) || "A"}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="bg-gray-50 rounded-xl p-3 relative group">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center">
+                      <span className="text-lg font-semibold text-gray-900">
+                        {author.name}
+                      </span>
+                      <VerifiedBadge author={author} />
+                    </div>
+                    <span className="text-xs text-gray-500 ml-2 mt-1">
+                      {new Date(comment.createdAt).toLocaleString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
-                    {comment.author?._id && <VerifiedBadge userId={comment.author._id} />}
                   </div>
-                  <span className="text-xs text-gray-500 ml-2 mt-1">
-                    {new Date(comment.createdAt).toLocaleString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+
+                  {author._id && author._id === user?._id && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteComment(comment._id, postId);
+                      }}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete comment"
+                    >
+                      <FaTrash size={14} />
+                    </button>
+                  )}
                 </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteComment(comment._id, postId);
-                  }}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
-                  title="Delete comment"
-                >
-                  <FaTrash size={14} />
-                </button>
+                <p className="text-md text-gray-700 mt-1">{comment.text}</p>
               </div>
 
-              <p className="text-md text-gray-700 mt-1">{comment.text}</p>
-
-
-            </div>
-
-            {parentId === comment._id && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-3"
-              >
-                <form
-                  onSubmit={(e) => {
-                    e.stopPropagation();
-                    handleAddComment(e, postId);
-                  }}
-                  className="flex gap-2 items-center"
+              {parentId === comment._id && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3"
                 >
-                  {user?.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.username}
-                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <FaUserCircle className="text-gray-400 text-2xl flex-shrink-0" />
-                  )}
-
-                  <button
-                    type="submit"
-                    className="bg-blue-500 text-white px-3 py-2 rounded-full text-sm hover:bg-blue-600 transition-colors flex-shrink-0"
-                    disabled={!text.trim()}
+                  <form
+                    onSubmit={(e) => {
+                      e.stopPropagation();
+                      handleAddComment(e, postId);
+                    }}
+                    className="flex gap-2 items-center"
                   >
-                    Post
-                  </button>
-                </form>
-              </motion.div>
-            )}
+                    {user?.profileImage?.url ? (
+                      <img
+                        src={user.profileImage?.url}
+                        alt={user.username}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <FaUserCircle className="text-gray-400 text-2xl flex-shrink-0" />
+                    )}
 
-            {renderComments(commentsArray, postId, comment._id, depth + 1)}
+                    <button
+                      type="submit"
+                      className="bg-blue-500 text-white px-3 py-2 rounded-full text-sm hover:bg-blue-600 transition-colors flex-shrink-0"
+                      disabled={!text.trim()}
+                    >
+                      Post
+                    </button>
+                  </form>
+                </motion.div>
+              )}
+
+              {renderComments(commentsArray, postId, comment._id, depth + 1)}
+            </div>
           </div>
-        </div>
-      </motion.div>
-    ));
-  };
-  // Post options dropdown component
-  const PostOptions = ({ post }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
-
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (
-          dropdownRef.current &&
-          !dropdownRef.current.contains(event.target)
-        ) {
-          setIsOpen(false);
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, []);
-
-    return (
-      <div className="relative" ref={dropdownRef}>
-
-
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-100"
-            >
-              <div className="py-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/editPost/${post._id}`);
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                >
-                  <FaEdit className="mr-2" size={14} />
-                  Edit Post
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeletePost(post._id);
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-                >
-                  <FaTrash className="mr-2" size={14} />
-                  Delete Post
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
+        </motion.div>
+      );
+    });
   };
 
 
@@ -648,85 +571,156 @@ export default function SpecPost() {
   // Error state
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex justify-center items-center h-screen"
+      >
         <p className="text-red-600 text-lg font-semibold">{error}</p>
+      </motion.div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-red-600 text-lg font-semibold">Post not found</p>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="max-w-full mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen"
-    >
-      {/* Post Content */}
-      <motion.div
-        whileHover={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
-        className="bg-white p-6 mb-8 duration-300 flex flex-col md:flex-row justify-between items-start gap-6 rounded-xl border border-gray-100"
+    <div className="w-full px-4 sm:px-6 py-8 min-h-screen bg-gray-50">
+      <motion.article
+        key={post._id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        whileHover={{
+          y: -4,
+          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+        }}
+        className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 transition-all duration-300 hover:border-indigo-200"
       >
-        <div className="flex-1">
-          <div className="flex items-center mb-3">
-            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-base">
+        {/* Thumbnail Section */}
+        {post.thumbnail && (
+          <div
+            className="w-full h-64 sm:h-80 relative overflow-hidden cursor-pointer"
+            onClick={() => navigate(`/post/${post._id}`)}
+          >
+            <motion.img
+              src={post.thumbnail}
+              alt={post.title}
+              className="w-full h-full object-cover"
+              whileHover={{ scale: 1.03 }}
+              transition={{ duration: 0.4 }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/15 to-transparent"></div>
+          </div>
+        )}
+
+        {/* Content Section */}
+        <div className="p-6 sm:p-8">
+          {/* Author Info */}
+          <div
+            className="flex items-center mb-6 cursor-pointer"
+            onClick={() => navigate(`/post/${post._id}`)}
+          >
+            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-lg">
               {post.author?.profileImage.url ? (
                 <img
                   src={post.author.profileImage.url}
                   alt={post.author.name}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="w-14 h-14 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-base">
-                  {post.author?.name?.charAt(0) || "U"}
-                </div>
+                post.author?.name?.charAt(0)?.toUpperCase() || "U"
               )}
             </div>
-            <div className="ml-3 flex-1">
+            <div className="ml-4 flex-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <p className="text-lg font-medium text-gray-900">
+                  <p className="text-lg sm:text-xl font-semibold text-gray-900">
                     {post.author?.name || "User"}
                   </p>
                   <VerifiedBadge author={post.author} />
                 </div>
-                <p className="text-xs text-gray-500">
-                  {new Date(post.createdAt).toLocaleString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+                <div className="flex flex-col items-end">
+                  <p className="text-sm text-gray-500">
+                    {new Date(post.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(post.createdAt).toLocaleString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
               </div>
-
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(post.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
             </div>
           </div>
 
+          {/* Category */}
           {post.sub_category && (
-            <div className="mb-3">
-              <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-md">
+            <div className="mb-4">
+              <span className="inline-block bg-indigo-100 text-indigo-800 text-sm px-3 py-1.5 rounded-lg">
                 {post.sub_category.name}
               </span>
             </div>
           )}
 
-          <h2 className="text-3xl font-bold text-gray-900 leading-snug mb-3">
+          {/* Title */}
+          <h2
+            className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight cursor-pointer hover:text-indigo-600 transition-colors"
+            onClick={() => navigate(`/post/${post._id}`)}
+          >
             {post.title}
           </h2>
 
-          <p className="text-gray-700 text-base mb-6 leading-relaxed">
-            {post.content}
-          </p>
+          {/* Content */}
+          <div
+            className="prose prose-sm sm:prose-base max-w-none text-gray-700 mb-6 cursor-pointer"
+            onClick={() => navigate(`/post/${post._id}`)}
+          >
+            {post.content.split('\n').map((paragraph, i) => (
+              <p key={i} className="mb-4 last:mb-0">
+                {paragraph || <br />}
+              </p>
+            ))}
+          </div>
 
+          {/* Files Gallery */}
+          {post.files?.urls?.length > 0 && (
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {post.files.urls.slice(0, 4).map((file) => (
+                <motion.div
+                  key={file._id}
+                  whileHover={{ scale: 1.02 }}
+                  className="rounded-lg overflow-hidden border border-gray-200"
+                >
+                  <img
+                    src={file.secure_url}
+                    alt={file.original_filename || "Post image"}
+                    className="w-full h-40 sm:h-48 object-cover cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(file.secure_url, "_blank");
+                    }}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Listen Button */}
           <motion.button
             whileHover={{
-              scale: 1.03,
-              backgroundColor: "rgba(99, 102, 241, 0.1)" // indigo-600 with 10% opacity
+              scale: 1.02,
+              backgroundColor: "rgba(99, 102, 241, 0.1)",
             }}
             whileTap={{ scale: 0.98 }}
             onClick={(e) => {
@@ -734,15 +728,16 @@ export default function SpecPost() {
               speakText(post.title, post.content);
             }}
             className={`
-    flex items-center gap-3 
-    px-4 py-3 rounded-xl
-    border border-indigo-200
-    bg-white/80 backdrop-blur-sm
-    shadow-sm hover:shadow-md
-    transition-all duration-200
-    text-indigo-600 hover:text-indigo-700
-    mb-6 w-full sm:w-auto
-  `}
+              flex items-center justify-center gap-3 
+              px-6 py-4 rounded-xl
+              border border-indigo-200
+              bg-white backdrop-blur-sm
+              shadow-sm hover:shadow-md
+              transition-all duration-200
+              text-indigo-600 hover:text-indigo-700
+              mb-8 w-full
+              text-base sm:text-lg
+            `}
           >
             <motion.div
               animate={{
@@ -750,15 +745,14 @@ export default function SpecPost() {
                 transition: {
                   repeat: Infinity,
                   duration: 2,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 },
               }}
               className="relative"
             >
-              <FaVolumeUp className="text-xl" />
-              {/* Optional sound waves animation */}
+              <FaVolumeUp className="text-2xl" />
               <motion.span
-                className="absolute -left-1 -top-1 w-7 h-7 border-2 border-indigo-400 rounded-full"
+                className="absolute -left-1 -top-1 w-8 h-8 border-2 border-indigo-400 rounded-full"
                 animate={{
                   scale: [1, 1.5, 1],
                   opacity: [0.8, 0, 0.8],
@@ -766,147 +760,123 @@ export default function SpecPost() {
                 transition={{
                   repeat: Infinity,
                   duration: 2,
-                  delay: 0.3
+                  delay: 0.3,
                 }}
               />
             </motion.div>
 
-            <span className="font-medium text-sm sm:text-base">
+            <span className="font-medium">
               Listen to this post
             </span>
-
-            {/* Optional play/pause indicator */}
-            <motion.div
-              className="ml-auto hidden sm:block"
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-            >
-              <svg
-                className="w-5 h-5 text-indigo-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </motion.div>
           </motion.button>
 
-          {post.files?.urls?.length > 0 && (
-            <div className="mb-4">
-              {post.files.urls.slice(0, 2).map((file) => (
-                <img
-                  key={file._id}
-                  src={file.secure_url}
-                  alt={file.original_filename || "Post image"}
-                  className="max-w-70 h-auto rounded mb-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(file.secure_url, '_blank');
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
-              ))}
-            </div>
-          )}
-
-          <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-            <div className="flex items-center text-sm gap-5">
-              {/* Like */}
+          {/* Actions Bar */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex items-center space-x-6">
+              {/* Like Button */}
               <motion.div
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleLikePost(post._id);
                 }}
-                className={`flex cursor-pointer items-center gap-1 ${likeCounts[post._id]?.isLiked
-                  ? "text-indigo-500"
-                  : "text-gray-500"
+                className={`flex cursor-pointer items-center gap-2 ${likeCounts[post._id]?.isLiked
+                  ? "text-blue-600"
+                  : "text-gray-600 hover:text-blue-600"
+                  } ${isLoadingLike
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                  }`}
+                disabled={isLoadingLike}
+              >
+                {isLoadingLike ? (
+                  <div className="w-5 h-5 border-2 border-gray-400 border-t-blue-500 rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <motion.div
+                      animate={{
+                        scale: likeCounts[post._id]?.isLiked ? [1, 1.3, 1] : 1,
+                        transition: { duration: 0.2 },
+                      }}
+                    >
+                      <BiSolidLike className="text-2xl" />
+                    </motion.div>
+                    <span className="text-base font-medium">
+                      {likeCounts[post._id]?.count || 0}
+                    </span>
+                  </>
+                )}
+              </motion.div>
+
+              {/* Comment Button */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleComments(post._id);
+                }}
+                className="flex items-center cursor-pointer gap-2 text-gray-600 hover:text-indigo-600"
+              >
+                <FaRegCommentDots className="text-xl" />
+                <span className="text-base font-medium">
+                  {commentCounts[post._id] || 0}
+                </span>
+              </div>
+
+              {/* Save Button */}
+              <div
+                onClick={(e) => handleSavePost(post._id, e)}
+                className={`cursor-pointer flex items-center gap-2 ${saveCounts[post._id]
+                  ? "text-green-600"
+                  : "text-gray-600 hover:text-green-600"
                   }`}
               >
                 <motion.div
                   animate={{
-                    scale: likeCounts[post._id]?.isLiked ? [1, 1.3, 1] : 1,
+                    scale: saveCounts[post._id] ? [1, 1.3, 1] : 1,
                     transition: { duration: 0.3 },
                   }}
                 >
-                  <BiSolidLike className="text-xl" />
+                  <FaBookmark className="text-xl" />
                 </motion.div>
-                <span className="text-sm">
-                  {likeCounts[post._id]?.count || 0}
-                </span>
-              </motion.div>
-
-              {/* Comment */}
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-
-                  toggleComments(post._id);
-                }}
-                className="flex items-center cursor-pointer gap-1 text-gray-500 hover:text-indigo-500"
-              >
-                <FaRegCommentDots className="text-xl" />
-                <span className="text-sm">
-                  {post.comments_count || comments[post._id]?.length || 0}
-                </span>
-              </motion.div>
-
-              {/* Save */}
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSavePost(post._id);
-                }}
-                className={`cursor-pointer flex items-center ${saveCounts[post._id] ? "text-green-500" : "text-gray-500"
-                  }`}
-              >
-                <FaBookmark className="text-xl" />
-                {saveCounts[post._id] && <span className="text-sm">Saved</span>}
-              </motion.div>
+                {tempSaved[post._id] && saveCounts[post._id] && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-green-600 text-base font-medium"
+                  >
+                    Saved
+                  </motion.span>
+                )}
+              </div>
             </div>
 
-            <div className="flex gap-2">
-              {post.author?._id === user?._id && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/editPost/${post._id}`);
-                    }}
-                    className="cursor-pointer text-gray-500 hover:text-blue-800"
-                    title="Edit"
-                  >
-                    <FaEdit size={20} />
-                  </button>
+            {/* Edit/Delete Buttons (for author) */}
+            {post.author?._id === user?._id && (
+              <div className="flex gap-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/editPost/${post._id}`);
+                  }}
+                  className="cursor-pointer text-gray-500 hover:text-blue-700 transition-colors"
+                  title="Edit"
+                >
+                  <FaEdit size={22} />
+                </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePost(post._id);
-                    }}
-                    className="cursor-pointer text-gray-500 hover:text-red-800"
-                    title="Delete"
-                  >
-                    <MdDelete size={20} />
-                  </button>
-                </>
-              )}
-              <PostOptions post={post} />
-            </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePost(post._id);
+                  }}
+                  className="cursor-pointer text-gray-500 hover:text-red-700 transition-colors"
+                  title="Delete"
+                >
+                  <MdDelete size={22} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Comments Section */}
@@ -919,47 +889,37 @@ export default function SpecPost() {
                 transition={{ duration: 0.3 }}
                 className="mt-6"
               >
-                <div className="border-t border-gray-200 pt-4">
+                <div className="border-t border-gray-200 pt-6">
                   <form
                     onSubmit={(e) => {
                       e.stopPropagation();
                       handleAddComment(e, post._id);
                     }}
-                    className="mb-4"
+                    className="mb-6"
                   >
-                    <div className="flex gap-2">
-                      {user?.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt={user.username}
-                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <FaUserCircle className="text-gray-400 text-3xl flex-shrink-0" />
-                      )}
+                    <div className="flex gap-3">
                       <input
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="Write a comment..."
-                        className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 bg-white"
-                        autoFocus
+                        className="flex-1 text-base border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200"
+                        autoFocus={!parentId}
                       />
                       <button
                         type="submit"
-                        className="bg-indigo-500 text-white px-4 py-2 rounded-full text-sm hover:bg-indigo-600 transition-colors flex-shrink-0"
-                        disabled={!text.trim()}
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-base hover:bg-indigo-700 transition-colors"
                       >
                         Post
                       </button>
                     </div>
                   </form>
 
-                  <div className="mb-4">
-                    {comments[post._id] && comments[post._id].length > 0 ? (
+                  <div className="space-y-4">
+                    {comments[post._id]?.length > 0 ? (
                       renderComments(comments[post._id], post._id)
                     ) : (
-                      <div className="text-center py-4 text-gray-500 text-sm">
+                      <div className="text-center py-6 text-gray-500 text-base">
                         No comments yet. Be the first to comment!
                       </div>
                     )}
@@ -969,24 +929,10 @@ export default function SpecPost() {
             )}
           </AnimatePresence>
         </div>
-
-        {post.thumbnail && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="w-full md:w-64 h-64 md:h-auto flex-shrink-0"
-          >
-            <img
-              src={post.thumbnail}
-              alt={post.title}
-              className="w-full h-full object-cover rounded-lg shadow-sm"
-            />
-          </motion.div>
-        )}
-      </motion.div>
+      </motion.article>
 
       <ToastContainer
-        position="top-right"
+        position="top-center"
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -996,8 +942,8 @@ export default function SpecPost() {
         draggable
         pauseOnHover
         theme="light"
-        toastClassName="rounded-lg shadow-lg border border-gray-100"
+        toastClassName="rounded-xl shadow-sm border border-gray-200 text-sm"
       />
-    </motion.div>
+    </div>
   );
 }
