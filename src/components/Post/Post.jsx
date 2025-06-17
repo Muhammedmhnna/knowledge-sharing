@@ -290,27 +290,11 @@ export default function Post() {
       );
 
       if (wasLiked) {
-        toast.info(
-          <div className="flex items-center">
-            <BiSolidLike className="text-blue-500 mr-2" />
-            <span>You unliked the post</span>
-          </div>,
-          {
-            icon: false,
-            className: "border-l-4 border-blue-500",
-          }
-        );
+        console.log("unliked");
+        
       } else {
-        toast.success(
-          <div className="flex items-center">
-            <BiSolidLike className="text-blue-500 mr-2" />
-            <span>You liked the post</span>
-          </div>,
-          {
-            icon: false,
-            className: "border-l-4 border-blue-500",
-          }
-        );
+        console.log("liked");
+        
       }
 
       const countResponse = await axios.get(
@@ -333,7 +317,6 @@ export default function Post() {
           isLiked: wasLiked,
         },
       }));
-      toast.error(error.response?.data?.message || "Failed to like post.");
     } finally {
       setIsLoadingLike(false);
     }
@@ -376,13 +359,11 @@ export default function Post() {
           }));
         }, 3000);
 
-        toast.success("Post saved successfully!");
       } else {
-        toast.info("Post removed from saved");
+        console.log("Post removed from saved");;
       }
     } catch (error) {
       console.error("Error saving post:", error);
-      toast.error(error.response?.data?.message || "Failed to save post");
     } finally {
       setIsLoadingSave(false);
     }
@@ -407,8 +388,7 @@ export default function Post() {
         `https://knowledge-sharing-pied.vercel.app/post/delete/${postId}`,
         { headers: { token: token } }
       );
-      toast.success("Post deleted successfully!");
-
+      console.log("Post deleted successfully!");
       // Refresh posts after deletion
       const { data } = await axios.get(
         `https://knowledge-sharing-pied.vercel.app/post/list?page=${currentPage}&limit=${limit}`
@@ -416,7 +396,6 @@ export default function Post() {
       setPosts(data.posts);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
-      toast.error("Failed to delete post. Try again.");
       console.error("Delete post error:", error);
     }
   };
@@ -704,16 +683,7 @@ export default function Post() {
 
     return (
       <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(!isOpen);
-          }}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <FaEllipsisV />
-        </button>
-
+   
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -1051,7 +1021,7 @@ export default function Post() {
                         </h2>
 
                         <div className="mb-4">
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-gray-600 text-lg">
                             {post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}
                           </p>
 
