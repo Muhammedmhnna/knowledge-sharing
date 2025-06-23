@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import {
   AiFillEye,
   AiFillEyeInvisible,
@@ -49,7 +48,6 @@ export default function AdminLogin() {
       );
 
       setApiSuccess(true);
-      toast.success("Login successful! Redirecting...");
 
       const { token, admin: adminData } = response.data;
 
@@ -64,7 +62,6 @@ export default function AdminLogin() {
       }, 1500);
     } catch (error) {
       setApiError(error.response?.data?.error || "Invalid email or password");
-      toast.error(error.response?.data?.error || "Login failed");
     } finally {
       setIsLoading(false);
     }
