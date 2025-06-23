@@ -227,8 +227,7 @@ export default function AllNationalIds() {
                           </div>
                           <div className="flex items-center text-gray-600">
                             <FiUser className="mr-2 text-gray-400" />
-                            <span>Submitted: {new Date(item.createdAt).toLocaleDateString()}</span>
-                          </div>
+                            <span>Submitted: {new Date(item.createdAt || Date.now()).toLocaleDateString()}</span>                          </div>
                         </div>
                       </div>
 
