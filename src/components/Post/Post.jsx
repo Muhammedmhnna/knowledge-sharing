@@ -27,6 +27,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../../Context/UserContext";
+import ChatPopup from "../ChatPopup/ChatPopup.jsx";
 
 export default function Post() {
   const [filteredPosts, setFilteredPosts] = useState([]);
@@ -130,13 +131,13 @@ export default function Post() {
 
             setSaveCounts(savedState);
           } catch (error) {
-            console.error("Error loading saved posts:", error);
+ 
           }
         }
 
         setIsLoading(false);
       } catch (error) {
-        console.error("Error loading data:", error);
+  
         setError("Failed to load posts. Please try again later.");
         setIsLoading(false);
       }
@@ -179,7 +180,7 @@ export default function Post() {
     if (
       !("webkitSpeechRecognition" in window || "SpeechRecognition" in window)
     ) {
-      console.warn("Speech Recognition not supported in this browser.");
+      toast.warn("Speech Recognition not supported in this browser.");
       return;
     }
 
@@ -199,9 +200,8 @@ export default function Post() {
     };
 
     recognition.onerror = (event) => {
-      console.error("Speech recognition error", event.error);
+      toast.error("Speech recognition error", event.error);
       setIsListening(false);
-      toast.error("Voice recognition failed. Please try again.");
     };
 
     recognition.onend = () => {
@@ -289,13 +289,7 @@ export default function Post() {
         { headers: { token: token } }
       );
 
-      if (wasLiked) {
-        console.log("unliked");
-        
-      } else {
-        console.log("liked");
-        
-      }
+    
 
       const countResponse = await axios.get(
         `https://knowledge-sharing-pied.vercel.app/interaction/${postId}/likes_count`
@@ -309,7 +303,6 @@ export default function Post() {
         },
       }));
     } catch (error) {
-      console.error("Like post error:", error);
       setLikeCounts((prev) => ({
         ...prev,
         [postId]: {
@@ -359,11 +352,9 @@ export default function Post() {
           }));
         }, 3000);
 
-      } else {
-        console.log("Post removed from saved");;
-      }
+      } 
     } catch (error) {
-      console.error("Error saving post:", error);
+      toast.error("Error saving post:", error);
     } finally {
       setIsLoadingSave(false);
     }
@@ -388,7 +379,7 @@ export default function Post() {
         `https://knowledge-sharing-pied.vercel.app/post/delete/${postId}`,
         { headers: { token: token } }
       );
-      console.log("Post deleted successfully!");
+    
       // Refresh posts after deletion
       const { data } = await axios.get(
         `https://knowledge-sharing-pied.vercel.app/post/list?page=${currentPage}&limit=${limit}`
@@ -396,7 +387,7 @@ export default function Post() {
       setPosts(data.posts);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
-      console.error("Delete post error:", error);
+      toast.error("Delete post error:", error);
     }
   };
 
@@ -428,7 +419,6 @@ export default function Post() {
           [postId]: res.data.comments || [],
         }));
       } catch (error) {
-        console.error("Error fetching comments:", error);
         toast.error("Failed to load comments");
       } finally {
         setLoadingComments((prev) => ({ ...prev, [postId]: false }));
@@ -446,7 +436,7 @@ export default function Post() {
         [postId]: res.data.comments_count || 0
       }));
     } catch (error) {
-      console.error("Error fetching comment count:", error);
+      toast.error("Error fetching comment count:", error);
     }
   };
 
@@ -480,8 +470,7 @@ export default function Post() {
 
       toast.success("Comment added successfully!");
     } catch (error) {
-      console.error("Error adding comment:", error);
-      toast.error("Failed to add comment");
+      toast.error("Error adding comment:", error);
     }
   };
 
@@ -505,8 +494,7 @@ export default function Post() {
 
       toast.success("Comment deleted successfully!");
     } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast.error("Failed to delete comment");
+      toast.error("Error deleting comment:", error);
     }
   };
 
@@ -1320,10 +1308,12 @@ export default function Post() {
                     Create Post
                   </button>
                 </div>
+                
               </motion.div>
             )}
           </div>
         </div>
+        <ChatPopup />
       </div>
 
       <ToastContainer

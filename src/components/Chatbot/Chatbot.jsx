@@ -32,16 +32,16 @@ const Chatbot = () => {
 
     const connectToAPI = async () => {
       try {
-        console.log(`Attempting to connect to Gradio API (attempt ${retryCount + 1})`);
+   
         const client = await Client.connect("yazied49/FI");
         setGradioClient(client);
         setConnectionStatus('connected');
-        console.log("Connected successfully to Gradio API");
+
       } catch (err) {
-        console.error("Connection error:", err);
+
 
         if (retryCount < MAX_RETRIES - 1) {
-          console.log(`Retrying in ${RETRY_DELAY / 1000} seconds...`);
+
           setTimeout(() => {
             setRetryCount(prev => prev + 1);
           }, RETRY_DELAY);
@@ -143,7 +143,6 @@ const Chatbot = () => {
         sender: 'bot'
       });
     } catch (err) {
-      console.error("API error:", err);
       const errorMessage = err.message.includes('timeout')
         ? "The request took too long. Please try again later."
         : "Sorry, I encountered an error. Please try again.";
@@ -206,7 +205,7 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="flex flex-col h-100 w-full bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800">
+    <div className="flex flex-col h-[550px] w-full bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800">
       {/* Header */}
       <motion.div
         className="p-4 shadow-md bg-gradient-to-r from-blue-600 to-purple-600"
