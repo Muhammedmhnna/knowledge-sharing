@@ -28,7 +28,7 @@ const ChatPopup = () => {
                 setGradioClient(client);
                 setConnectionStatus('connected');
             } catch (err) {
-                console.error("Connection error:", err);
+                toast.error("Connection error:", err);
                 setConnectionStatus('disconnected');
                 addSystemMessage("Connection error. Working in limited mode.");
             }
@@ -107,7 +107,7 @@ const ChatPopup = () => {
                 sender: 'bot'
             });
         } catch (err) {
-            console.error("API error:", err);
+            toast.error("API error:", err);
             const errorMessage = err.message.includes('timeout')
                 ? "The request took too long. Please try again later."
                 : "Sorry, I encountered an error. Please try again.";
